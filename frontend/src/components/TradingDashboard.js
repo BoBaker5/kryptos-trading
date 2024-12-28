@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 
 const API_URL = 'http://localhost:8000';
