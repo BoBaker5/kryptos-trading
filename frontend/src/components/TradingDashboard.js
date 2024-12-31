@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 
-<<<<<<< HEAD
-const API_URL = 'http://129.158.53.116:8000';
-=======
 const API_URL = 'https://kryptostrading.com:8000';
->>>>>>> 55daf3b75c43c058683a222a68df6a2f3aa8c4ef
 const USER_ID = 1; // For demo purposes
 
 const TradingDashboard = () => {
