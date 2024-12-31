@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'http://129.158.53.116:8000';
 const USER_ID = 1; // For demo purposes
 
 const TradingDashboard = () => {
