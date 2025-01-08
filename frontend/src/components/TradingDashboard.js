@@ -7,75 +7,92 @@ const USER_ID = 1;
 
 // Create axios instance with custom config
 const api = axios.create({
-   baseURL: API_URL,
-   headers: {
-       'Accept': 'application/json',
-       'Content-Type': 'application/json'
-   }
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    },
+    validateStatus: function (status) {
+        return status >= 200 && status < 500; // Accept all status codes less than 500
+    }
 });
 
-// Add axios interceptor to handle self-signed certificate
-api.interceptors.request.use((config) => {
-   // Add any custom headers if needed
-   return config;
-});
+api.defaults.timeout = 5000; // 5 seconds timeout
 
 const TradingDashboard = () => {
- const [botData, setBotData] = useState({
-   status: 'stopped',
-   positions: [],
-   portfolio_value: 0,
-   daily_pnl: 0,
-   performance: []
- });
+  const [botData, setBotData] = useState({
+    status: 'stopped',
+    positions: [],
+    portfolio_value: 0,
+    daily_pnl: 0,
+    performance: []
+  });
 
- const [credentials, setCredentials] = useState({
-   api_key: '',
-   secret_key: ''
- });
+  const [credentials, setCredentials] = useState({
+    api_key: '',
+    secret_key: ''
+  });
 
- const [error, setError] = useState(null);
+  const [error, setError] = useState(null);
 
- useEffect(() => {
-   const fetchBotStatus = async () => {
-     try {
-       const response = await api.get(`/bot-status/${USER_ID}`);
-       setBotData(response.data);
-     } catch (err) {
-       console.error('Error fetching bot status:', err);
-       setError(err.message);
-     }
-   };
+  useEffect(() => {
+    const fetchBotStatus = async () => {
+      try {
+        const response = await api.get(`/bot-status/${USER_ID}`, {
+          headers: {
+            'Referer': 'https://kryptostrading.com'
+          }
+        });
+        if (response.status === 200) {
+          setBotData(response.data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error fetching bot status:', err);
+        setError('Network error: Unable to connect to trading server');
+      }
+    };
 
-   fetchBotStatus();
-   const interval = setInterval(fetchBotStatus, 30000);
-   return () => clearInterval(interval);
- }, []);
+    fetchBotStatus();
+    const interval = setInterval(fetchBotStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
- const handleStartBot = async (e) => {
-   e.preventDefault();
-   try {
-     setError(null);
-     console.log('Starting bot with credentials:', credentials);
-     await api.post(`/start-bot/${USER_ID}`, credentials);
-     setBotData(prev => ({ ...prev, status: 'running' }));
-   } catch (err) {
-     console.error('Error starting bot:', err);
-     setError(err.response?.data?.detail || err.message);
-   }
- };
+  const handleStartBot = async (e) => {
+    e.preventDefault();
+    try {
+      setError(null);
+      const response = await api.post(`/start-bot/${USER_ID}`, credentials, {
+        headers: {
+          'Referer': 'https://kryptostrading.com'
+        }
+      });
+      if (response.status === 200) {
+        setBotData(prev => ({ ...prev, status: 'running' }));
+      }
+    } catch (err) {
+      console.error('Error starting bot:', err);
+      setError('Failed to start bot: Please check your API credentials');
+    }
+  };
 
- const handleStopBot = async () => {
-   try {
-     setError(null);
-     await api.post(`/stop-bot/${USER_ID}`);
-     setBotData(prev => ({ ...prev, status: 'stopped' }));
-   } catch (err) {
-     console.error('Error stopping bot:', err);
-     setError(err.response?.data?.detail || err.message);
-   }
- };
-
+  const handleStopBot = async () => {
+    try {
+      setError(null);
+      const response = await api.post(`/stop-bot/${USER_ID}`, {}, {
+        headers: {
+          'Referer': 'https://kryptostrading.com'
+        }
+      });
+      if (response.status === 200) {
+        setBotData(prev => ({ ...prev, status: 'stopped' }));
+      }
+    } catch (err) {
+      console.error('Error stopping bot:', err);
+      setError('Failed to stop bot: Please try again');
+    }
+  };
+   
   // Rest of the component remains the same
   return (
     <div className="min-h-screen bg-gray-100 p-4">
