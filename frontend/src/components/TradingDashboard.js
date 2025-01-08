@@ -95,7 +95,7 @@ const TradingDashboard = () => {
     }
   };
 
-  return (
+      return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
@@ -108,12 +108,6 @@ const TradingDashboard = () => {
             </span>
           </div>
         </header>
-
-        {isLoading && (
-          <div className="fixed top-4 right-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        )}
 
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
@@ -148,9 +142,8 @@ const TradingDashboard = () => {
               <button
                 type="submit"
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-                disabled={isLoading}
               >
-                {isLoading ? 'Starting...' : 'Start Bot'}
+                Start Bot
               </button>
             </form>
           </div>
@@ -160,13 +153,13 @@ const TradingDashboard = () => {
           <button
             onClick={handleStopBot}
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg mb-8"
-            disabled={isLoading}
           >
-            {isLoading ? 'Stopping...' : 'Stop Bot'}
+            Stop Bot
           </button>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* Metrics remain the same */}
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-blue-500" />
