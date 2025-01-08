@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
+import https from 'https';
 
 const API_URL = 'https://150.136.163.34';
 const USER_ID = 1; // For demo purposes
+
+// Create axios instance with custom config
+const api = axios.create({
+    baseURL: API_URL,
+    httpsAgent: new https.Agent({  
+        rejectUnauthorized: false
+    }),
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+});
 
 const TradingDashboard = () => {
   const [botData, setBotData] = useState({
@@ -24,7 +37,7 @@ const TradingDashboard = () => {
   useEffect(() => {
     const fetchBotStatus = async () => {
       try {
-        const response = await axios.get(`${API_URL}/bot-status/${USER_ID}`);
+        const response = await api.get(`/bot-status/${USER_ID}`);
         setBotData(response.data);
       } catch (err) {
         console.error('Error fetching bot status:', err);
@@ -42,7 +55,7 @@ const TradingDashboard = () => {
     try {
       setError(null);
       console.log('Starting bot with credentials:', credentials);
-      await axios.post(`${API_URL}/start-bot/${USER_ID}`, credentials);
+      await api.post(`/start-bot/${USER_ID}`, credentials);
       setBotData(prev => ({ ...prev, status: 'running' }));
     } catch (err) {
       console.error('Error starting bot:', err);
@@ -53,7 +66,7 @@ const TradingDashboard = () => {
   const handleStopBot = async () => {
     try {
       setError(null);
-      await axios.post(`${API_URL}/stop-bot/${USER_ID}`);
+      await api.post(`/stop-bot/${USER_ID}`);
       setBotData(prev => ({ ...prev, status: 'stopped' }));
     } catch (err) {
       console.error('Error stopping bot:', err);
@@ -61,6 +74,7 @@ const TradingDashboard = () => {
     }
   };
 
+  // Rest of the component remains the same
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
@@ -125,6 +139,7 @@ const TradingDashboard = () => {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* Metrics remain the same */}
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-blue-500" />
