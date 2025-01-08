@@ -1,78 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
-import https from 'https';
 
 const API_URL = 'https://150.136.163.34';
-const USER_ID = 1; // For demo purposes
+const USER_ID = 1;
 
 // Create axios instance with custom config
 const api = axios.create({
-    baseURL: API_URL,
-    httpsAgent: new https.Agent({  
-        rejectUnauthorized: false
-    }),
-    headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
+   baseURL: API_URL,
+   headers: {
+       'Accept': 'application/json',
+       'Content-Type': 'application/json'
+   }
+});
+
+// Add axios interceptor to handle self-signed certificate
+api.interceptors.request.use((config) => {
+   // Add any custom headers if needed
+   return config;
 });
 
 const TradingDashboard = () => {
-  const [botData, setBotData] = useState({
-    status: 'stopped',
-    positions: [],
-    portfolio_value: 0,
-    daily_pnl: 0,
-    performance: []
-  });
+ const [botData, setBotData] = useState({
+   status: 'stopped',
+   positions: [],
+   portfolio_value: 0,
+   daily_pnl: 0,
+   performance: []
+ });
 
-  const [credentials, setCredentials] = useState({
-    api_key: '',
-    secret_key: ''
-  });
+ const [credentials, setCredentials] = useState({
+   api_key: '',
+   secret_key: ''
+ });
 
-  const [error, setError] = useState(null);
+ const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchBotStatus = async () => {
-      try {
-        const response = await api.get(`/bot-status/${USER_ID}`);
-        setBotData(response.data);
-      } catch (err) {
-        console.error('Error fetching bot status:', err);
-        setError(err.message);
-      }
-    };
+ useEffect(() => {
+   const fetchBotStatus = async () => {
+     try {
+       const response = await api.get(`/bot-status/${USER_ID}`);
+       setBotData(response.data);
+     } catch (err) {
+       console.error('Error fetching bot status:', err);
+       setError(err.message);
+     }
+   };
 
-    fetchBotStatus();
-    const interval = setInterval(fetchBotStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
+   fetchBotStatus();
+   const interval = setInterval(fetchBotStatus, 30000);
+   return () => clearInterval(interval);
+ }, []);
 
-  const handleStartBot = async (e) => {
-    e.preventDefault();
-    try {
-      setError(null);
-      console.log('Starting bot with credentials:', credentials);
-      await api.post(`/start-bot/${USER_ID}`, credentials);
-      setBotData(prev => ({ ...prev, status: 'running' }));
-    } catch (err) {
-      console.error('Error starting bot:', err);
-      setError(err.response?.data?.detail || err.message);
-    }
-  };
+ const handleStartBot = async (e) => {
+   e.preventDefault();
+   try {
+     setError(null);
+     console.log('Starting bot with credentials:', credentials);
+     await api.post(`/start-bot/${USER_ID}`, credentials);
+     setBotData(prev => ({ ...prev, status: 'running' }));
+   } catch (err) {
+     console.error('Error starting bot:', err);
+     setError(err.response?.data?.detail || err.message);
+   }
+ };
 
-  const handleStopBot = async () => {
-    try {
-      setError(null);
-      await api.post(`/stop-bot/${USER_ID}`);
-      setBotData(prev => ({ ...prev, status: 'stopped' }));
-    } catch (err) {
-      console.error('Error stopping bot:', err);
-      setError(err.response?.data?.detail || err.message);
-    }
-  };
+ const handleStopBot = async () => {
+   try {
+     setError(null);
+     await api.post(`/stop-bot/${USER_ID}`);
+     setBotData(prev => ({ ...prev, status: 'stopped' }));
+   } catch (err) {
+     console.error('Error stopping bot:', err);
+     setError(err.response?.data?.detail || err.message);
+   }
+ };
 
   // Rest of the component remains the same
   return (
