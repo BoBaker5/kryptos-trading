@@ -1,51 +1,37 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 
-// Use environment variables for API configuration
-const API_URL = process.env.REACT_APP_API_URL || 'https://150.136.163.34';
-const USER_ID = process.env.REACT_APP_USER_ID || 1;
+const API_URL = 'https://150.136.163.34';
+const USER_ID = 1;
 
-// Improved API client setup
-const createApiClient = () => {
-  const handleRequest = async (endpoint, options = {}) => {
-    const defaultOptions = {
-      headers: {
+// Create axios instance with custom config
+const api = axios.create({
+    baseURL: API_URL,
+    headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      timeout: 5000,
-    };
-
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        ...defaultOptions,
-        ...options,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        throw new Error('Unable to connect to trading server. Please check if the server is running and accessible.');
-      }
-      throw error;
+        'Content-Type': 'application/json'
+    },
+    validateStatus: function (status) {
+        return status >= 200 && status < 500;
     }
-  };
+});
 
-  return {
-    getBotStatus: () => handleRequest(`/bot-status/${USER_ID}`),
-    startBot: (credentials) => handleRequest(`/start-bot/${USER_ID}`, {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    }),
-    stopBot: () => handleRequest(`/stop-bot/${USER_ID}`, {
-      method: 'POST',
-    }),
-  };
-};
+// Add response interceptor to handle certificate errors
+api.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.code === 'ERR_CERT_AUTHORITY_INVALID') {
+            // Retry the request ignoring the certificate error
+            const config = {
+                ...error.config,
+                validateStatus: status => status >= 200 && status < 500
+            };
+            return axios(config);
+        }
+        return Promise.reject(error);
+    }
+);
 
 const TradingDashboard = () => {
   const [botData, setBotData] = useState({
@@ -62,66 +48,50 @@ const TradingDashboard = () => {
   });
 
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const api = createApiClient();
 
   useEffect(() => {
-    let isMounted = true;
     const fetchBotStatus = async () => {
       try {
-        setIsLoading(true);
-        const data = await api.getBotStatus();
-        if (isMounted) {
-          setBotData(data);
+        const response = await api.get(`/bot-status/${USER_ID}`);
+        if (response.status === 200) {
+          setBotData(response.data);
           setError(null);
         }
       } catch (err) {
-        if (isMounted) {
-          console.error('Error fetching bot status:', err);
-          setError(err.message);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        console.error('Error fetching bot status:', err);
+        setError('Unable to connect to trading server. Please check your connection.');
       }
     };
 
     fetchBotStatus();
     const interval = setInterval(fetchBotStatus, 30000);
-    
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   const handleStartBot = async (e) => {
     e.preventDefault();
     try {
-      setIsLoading(true);
       setError(null);
-      await api.startBot(credentials);
-      setBotData(prev => ({ ...prev, status: 'running' }));
+      const response = await api.post(`/start-bot/${USER_ID}`, credentials);
+      if (response.status === 200) {
+        setBotData(prev => ({ ...prev, status: 'running' }));
+      }
     } catch (err) {
       console.error('Error starting bot:', err);
       setError('Failed to start bot. Please check your credentials and try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleStopBot = async () => {
     try {
-      setIsLoading(true);
       setError(null);
-      await api.stopBot();
-      setBotData(prev => ({ ...prev, status: 'stopped' }));
+      const response = await api.post(`/stop-bot/${USER_ID}`);
+      if (response.status === 200) {
+        setBotData(prev => ({ ...prev, status: 'stopped' }));
+      }
     } catch (err) {
       console.error('Error stopping bot:', err);
       setError('Failed to stop bot. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
