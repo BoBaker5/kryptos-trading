@@ -36,8 +36,13 @@ except ImportError as e:
     EnhancedKrakenCryptoBot = None
     DemoTradingBot = None
 
-# Create the API router with prefix
-router = APIRouter(prefix="/api")
+# Create the API router
+router = APIRouter()
+
+# Test endpoint to verify API functionality
+@router.get("/test")
+async def test():
+    return {"message": "API is working"}
 
 class KrakenCredentials(BaseModel):
     api_key: str
@@ -62,7 +67,12 @@ async def run_demo_bot():
 app = FastAPI()
 
 @app.on_event("startup")
-async def startup_event():
+async def debug_routes():
+    """Debug endpoint to list all registered routes"""
+    logger.info("Registered routes:")
+    for route in app.routes:
+        logger.info(f"  {route.path}")
+    
     global demo_bot
     try:
         logger.info("Starting official demo bot...")
@@ -92,6 +102,7 @@ app.add_middleware(
 @router.get("/demo-status")
 async def get_demo_status():
     """Get status of the official demo bot"""
+    logger.info("Fetching demo status...")
     if not demo_bot:
         return {
             "status": "stopped",
@@ -131,6 +142,7 @@ async def get_demo_status():
 
 @router.get("/bot-status/{user_id}")
 async def get_bot_status(user_id: int):
+    logger.info(f"Fetching bot status for user {user_id}")
     if not BOT_AVAILABLE:
         logger.warning("Bot not available")
         return {
@@ -191,6 +203,7 @@ async def get_bot_status(user_id: int):
 
 @router.post("/start-bot/{user_id}")
 async def start_bot(user_id: int, credentials: KrakenCredentials):
+    logger.info(f"Starting bot for user {user_id}")
     if not BOT_AVAILABLE:
         raise HTTPException(status_code=500, detail="Trading bot not available")
         
@@ -219,6 +232,7 @@ async def start_bot(user_id: int, credentials: KrakenCredentials):
 
 @router.post("/stop-bot/{user_id}")
 async def stop_bot(user_id: int):
+    logger.info(f"Stopping bot for user {user_id}")
     if not BOT_AVAILABLE:
         raise HTTPException(status_code=500, detail="Trading bot not available")
         
@@ -235,10 +249,11 @@ async def stop_bot(user_id: int):
         logger.error(f"Error stopping bot: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-# Include the router
-app.include_router(router)
+# Include the router with prefix
+app.include_router(router, prefix="/api")
 
 # If running directly
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    logger.info("Starting server...")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
