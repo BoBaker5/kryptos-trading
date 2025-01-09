@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 
-const API_URL = 'https://150.136.163.34:8000';
+const API_URL = 'http://150.136.163.34:8000';
 const USER_ID = 1;
 
 // Create axios instance with custom config
