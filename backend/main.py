@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
@@ -35,20 +35,8 @@ except ImportError as e:
     EnhancedKrakenCryptoBot = None
     DemoTradingBot = None
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://kryptostrading.com",
-        "https://www.kryptostrading.com",
-        "http://150.136.163.34:8000",
-        "http://localhost:3000"  
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create the router
+router = APIRouter(prefix="/api")
 
 class KrakenCredentials(BaseModel):
     api_key: str
@@ -69,7 +57,7 @@ async def run_demo_bot():
     except Exception as e:
         logger.error(f"Error in demo bot loop: {e}")
 
-@app.on_event("startup")
+@router.on_event("startup")
 async def startup_event():
     global demo_bot
     try:
@@ -83,7 +71,7 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Error starting demo bot: {e}")
 
-@app.get("/demo-status")
+@router.get("/demo-status")
 async def get_demo_status():
     """Get status of the official demo bot"""
     if not demo_bot:
@@ -123,7 +111,7 @@ async def get_demo_status():
             "performance_metrics": []
         }
 
-@app.get("/bot-status/{user_id}")
+@router.get("/bot-status/{user_id}")
 async def get_bot_status(user_id: int):
     if not BOT_AVAILABLE:
         logger.warning("Bot not available")
@@ -183,7 +171,7 @@ async def get_bot_status(user_id: int):
             "daily_pnl": 0
         }
 
-@app.post("/start-bot/{user_id}")
+@router.post("/start-bot/{user_id}")
 async def start_bot(user_id: int, credentials: KrakenCredentials):
     if not BOT_AVAILABLE:
         raise HTTPException(status_code=500, detail="Trading bot not available")
@@ -211,7 +199,7 @@ async def start_bot(user_id: int, credentials: KrakenCredentials):
         logger.error(f"Error starting bot: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/stop-bot/{user_id}")
+@router.post("/stop-bot/{user_id}")
 async def stop_bot(user_id: int):
     if not BOT_AVAILABLE:
         raise HTTPException(status_code=500, detail="Trading bot not available")
@@ -228,3 +216,28 @@ async def stop_bot(user_id: int):
     except Exception as e:
         logger.error(f"Error stopping bot: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+# Create the FastAPI app and include the router
+app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://kryptostrading.com",
+        "https://www.kryptostrading.com",
+        "http://150.136.163.34:8000",
+        "http://localhost:3000"  
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include the router
+app.include_router(router)
+
+# If running directly
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
