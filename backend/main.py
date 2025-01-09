@@ -42,10 +42,8 @@ app.add_middleware(
     allow_origins=[
         "https://kryptostrading.com",
         "https://www.kryptostrading.com",
-        "http://150.136.163.34",
         "http://150.136.163.34:8000",
-        "http://localhost:3000",
-        "http://localhost:8000"
+        "http://localhost:3000"  
     ],
     allow_credentials=True,
     allow_methods=["*"],
