@@ -7,6 +7,7 @@ import os
 import asyncio
 from pathlib import Path
 import logging
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
@@ -35,7 +36,7 @@ except ImportError as e:
     EnhancedKrakenCryptoBot = None
     DemoTradingBot = None
 
-# Create the router
+# Create the API router with prefix
 router = APIRouter(prefix="/api")
 
 class KrakenCredentials(BaseModel):
@@ -57,7 +58,10 @@ async def run_demo_bot():
     except Exception as e:
         logger.error(f"Error in demo bot loop: {e}")
 
-@router.on_event("startup")
+# Create the FastAPI app
+app = FastAPI()
+
+@app.on_event("startup")
 async def startup_event():
     global demo_bot
     try:
@@ -70,6 +74,20 @@ async def startup_event():
         logger.info("Official demo bot started successfully")
     except Exception as e:
         logger.error(f"Error starting demo bot: {e}")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://kryptostrading.com",
+        "https://www.kryptostrading.com",
+        "http://150.136.163.34:8000",
+        "http://localhost:3000"  
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @router.get("/demo-status")
 async def get_demo_status():
@@ -216,23 +234,6 @@ async def stop_bot(user_id: int):
     except Exception as e:
         logger.error(f"Error stopping bot: {e}")
         raise HTTPException(status_code=400, detail=str(e))
-
-# Create the FastAPI app and include the router
-app = FastAPI()
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://kryptostrading.com",
-        "https://www.kryptostrading.com",
-        "http://150.136.163.34:8000",
-        "http://localhost:3000"  
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Include the router
 app.include_router(router)
