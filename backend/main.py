@@ -252,6 +252,11 @@ async def stop_bot(user_id: int):
 # Include the router with prefix
 app.include_router(router, prefix="/api")
 
+routes = [f"{route.path}" for route in app.routes]
+print("Available Routes:")
+for route in routes:
+    print(f"  {route}")
+
 # If running directly
 if __name__ == "__main__":
     import uvicorn
