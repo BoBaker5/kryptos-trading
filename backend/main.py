@@ -131,6 +131,50 @@ async def get_bot_status(user_id: int):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+async def get_bot_status(user_id: int):
+    try:
+        bot = bot_manager.get_bot(user_id)
+        if not bot:
+            return {
+                "status": "stopped",
+                "positions": [],
+                "portfolio_value": 0,
+                "daily_pnl": 0,
+                "returns_data": [],
+                "signals": []
+            }
+
+        # Get historical returns data for the chart
+        returns_data = []
+        for data_point in bot.performance_metrics:
+            returns_data.append({
+                "timestamp": data_point['timestamp'],
+                "return": ((data_point['value'] - bot.initial_balance) / bot.initial_balance) * 100
+            })
+
+        # Get current signals if available
+        signals = []
+        if hasattr(bot, 'current_signals'):
+            for symbol, signal in bot.current_signals.items():
+                signals.append({
+                    "symbol": symbol,
+                    "signal": signal['action'],
+                    "confidence": signal['confidence']
+                })
+
+        return {
+            "status": "running" if bot.running else "stopped",
+            "positions": bot.position_tracker.positions,
+            "portfolio_value": bot.portfolio_value,
+            "daily_pnl": bot.daily_pnl,
+            "returns_data": returns_data,
+            "signals": signals
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @app.get("/api/performance/{user_id}", response_model=APIResponse)
 async def get_performance_history(user_id: int):
