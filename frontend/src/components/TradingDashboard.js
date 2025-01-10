@@ -5,8 +5,8 @@ import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 import PortfolioReturnsChart from './PortfolioReturnsChart';
 import ConfidenceIndicator from './ConfidenceIndicator';
 
-const API_URL = 'https://kryptostrading.com/api';
-const USER_ID = 1; // Replace with actual user ID management
+const API_URL = process.env.REACT_APP_API_URL || 'https://kryptostrading.com/api';
+const USER_ID = 1;
 
 const TradingDashboard = () => {
   const [botData, setBotData] = useState({
@@ -16,11 +16,6 @@ const TradingDashboard = () => {
     daily_pnl: 0,
     returns_data: [],
     signals: []
-  });
-
-  const [credentials, setCredentials] = useState({
-    api_key: '',
-    secret_key: ''
   });
 
   const [error, setError] = useState(null);
@@ -44,17 +39,36 @@ const TradingDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleStopBot = async () => {
+    try {
+      const response = await axios.post(`${API_URL}/stop-bot/${USER_ID}`);
+      if (response.status === 200) {
+        setBotData(prev => ({ ...prev, status: 'stopped' }));
+      }
+    } catch (err) {
+      setError('Failed to stop bot. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-navy-900 p-4">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-blue-100">Crypto Trading Dashboard</h1>
-          <div className="flex items-center mt-4">
+          <div className="flex items-center justify-between mt-4">
             <span className={`px-3 py-1 rounded-full ${
               botData.status === 'running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
               {botData.status === 'running' ? 'Bot Active' : 'Bot Stopped'}
             </span>
+            {botData.status === 'running' && (
+              <button
+                onClick={handleStopBot}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+              >
+                Stop Bot
+              </button>
+            )}
           </div>
         </header>
 
