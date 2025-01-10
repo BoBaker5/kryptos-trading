@@ -1,6 +1,6 @@
 // components/ConfidenceIndicator.jsx
 import React from 'react';
-import { AlertCircle, BrainCircuit, ChartBar, Cpu } from 'lucide-react';
+import { BrainCircuit, ChartBar, Cpu } from 'lucide-react';
 
 const ConfidenceIndicator = ({ signals }) => {
   const mockSignals = [
