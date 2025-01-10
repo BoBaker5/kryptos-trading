@@ -36,6 +36,9 @@ except ImportError as e:
     EnhancedKrakenCryptoBot = None
     DemoTradingBot = None
 
+# Create the FastAPI app first
+app = FastAPI()
+
 # Create the API router
 router = APIRouter()
 
@@ -62,9 +65,6 @@ async def run_demo_bot():
             await asyncio.sleep(5)
     except Exception as e:
         logger.error(f"Error in demo bot loop: {e}")
-
-# Create the FastAPI app
-app = FastAPI()
 
 @app.on_event("startup")
 async def debug_routes():
@@ -252,6 +252,7 @@ async def stop_bot(user_id: int):
 # Include the router with prefix
 app.include_router(router, prefix="/api")
 
+# Debug print all routes
 routes = [f"{route.path}" for route in app.routes]
 print("Available Routes:")
 for route in routes:
