@@ -1,265 +1,225 @@
-from fastapi import FastAPI, HTTPException, APIRouter
+# backend/app/main.py
+from fastapi import FastAPI, WebSocket, HTTPException, Depends, status, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict
-import sys
-import os
-import asyncio
-from pathlib import Path
 import logging
-from dotenv import load_dotenv
+from typing import Optional, Dict
+from datetime import datetime
+import json
+import asyncio
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger("TradingAPI")
+from .bot_manager import BotManager
+from .database import get_db
+from sqlalchemy.orm import Session
 
-# Add bot directory to Python path
-BACKEND_DIR = Path(__file__).resolve().parent
-BOT_DIR = BACKEND_DIR / "bot"
-sys.path.append(str(BOT_DIR))
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-print(f"Python path: {sys.path}")
-print(f"Looking for bot in: {BOT_DIR}")
+# Initialize FastAPI app
+app = FastAPI(title="Kryptos Trading API")
 
-try:
-    from kraken_crypto_bot_ai import EnhancedKrakenCryptoBot
-    from demo_bot import DemoTradingBot
-    print("Successfully imported trading bots")
-    BOT_AVAILABLE = True
-except ImportError as e:
-    print(f"Error importing trading bot: {e}")
-    print(f"Current directory: {os.getcwd()}")
-    BOT_AVAILABLE = False
-    EnhancedKrakenCryptoBot = None
-    DemoTradingBot = None
+# Initialize bot manager
+bot_manager = BotManager()
 
-# Create the FastAPI app first
-app = FastAPI()
-
-# Create the API router
-router = APIRouter()
-
-# Test endpoint to verify API functionality
-@router.get("/test")
-async def test():
-    return {"message": "API is working"}
-
-class KrakenCredentials(BaseModel):
-    api_key: str
-    secret_key: str
-
-# Store active bots and their data
-active_bots = {}
-demo_bot = None
-
-async def run_demo_bot():
-    global demo_bot
-    try:
-        logger.info("Starting demo bot...")
-        while True:
-            if demo_bot and demo_bot.running:
-                await demo_bot.update_portfolio()
-            await asyncio.sleep(5)
-    except Exception as e:
-        logger.error(f"Error in demo bot loop: {e}")
-
-@app.on_event("startup")
-async def debug_routes():
-    """Debug endpoint to list all registered routes"""
-    logger.info("Registered routes:")
-    for route in app.routes:
-        logger.info(f"  {route.path}")
-    
-    global demo_bot
-    try:
-        logger.info("Starting official demo bot...")
-        demo_bot = DemoTradingBot()
-        demo_bot.running = True
-        
-        # Start demo bot in background task
-        asyncio.create_task(demo_bot.run())
-        logger.info("Official demo bot started successfully")
-    except Exception as e:
-        logger.error(f"Error starting demo bot: {e}")
-
-# Add CORS middleware
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://kryptostrading.com",
-        "https://www.kryptostrading.com",
-        "http://150.136.163.34:8000",
-        "http://localhost:3000"  
-    ],
+    allow_origins=["https://kryptostrading.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@router.get("/demo-status")
-async def get_demo_status():
-    """Get status of the official demo bot"""
-    logger.info("Fetching demo status...")
-    if not demo_bot:
-        return {
-            "status": "stopped",
-            "positions": [],
-            "portfolio_value": 1000000,
-            "daily_pnl": 0,
-            "performance_metrics": []
-        }
-    
-    try:
-        positions = []
-        for symbol, pos in demo_bot.position_tracker["positions"].items():
-            positions.append({
-                "symbol": symbol,
-                "quantity": pos['quantity'],
-                "entry_price": pos['entry_price'],
-                "current_price": pos['current_price'],
-                "pnl": ((pos['current_price'] - pos['entry_price']) / pos['entry_price']) * 100
-            })
+# Request/Response models
+class BotCredentials(BaseModel):
+    api_key: str
+    secret_key: str
 
-        return {
-            "status": "running",
-            "positions": positions,
-            "portfolio_value": demo_bot.portfolio_value,
-            "daily_pnl": demo_bot.daily_pnl,
-            "performance_metrics": demo_bot.performance_metrics[-100:]
-        }
-    except Exception as e:
-        logger.error(f"Error getting demo status: {e}")
-        return {
-            "status": "error",
-            "positions": [],
-            "portfolio_value": 1000000,
-            "daily_pnl": 0,
-            "performance_metrics": []
-        }
+class APIResponse(BaseModel):
+    status: str
+    message: str
+    data: Optional[dict] = None
 
-@router.get("/bot-status/{user_id}")
-async def get_bot_status(user_id: int):
-    logger.info(f"Fetching bot status for user {user_id}")
-    if not BOT_AVAILABLE:
-        logger.warning("Bot not available")
-        return {
-            "status": "error",
-            "message": "Trading bot not available",
-            "positions": [],
-            "portfolio_value": 0,
-            "daily_pnl": 0
-        }
-        
-    if user_id not in active_bots:
-        logger.info("No active bot for user")
-        return {
-            "status": "stopped",
-            "positions": [],
-            "portfolio_value": 0,
-            "daily_pnl": 0
-        }
-    
-    bot = active_bots[user_id]["bot"]
-    try:
-        logger.info("Getting bot data...")
-        # Get actual balance
-        balance = bot.get_account_balance()
-        logger.info(f"Account balance: {balance}")
-        
-        # Get positions
-        positions = []
-        if hasattr(bot, 'position_tracker'):
-            logger.info("Getting positions...")
-            for symbol, pos in bot.position_tracker.positions.items():
-                logger.info(f"Position found for {symbol}: {pos}")
-                current_price = bot.get_latest_price(symbol)
-                if current_price:
-                    pnl = ((current_price - pos['entry_price']) / pos['entry_price']) * 100
-                    positions.append({
-                        "symbol": symbol,
-                        "quantity": pos['quantity'],
-                        "entry_price": pos['entry_price'],
-                        "current_price": current_price,
-                        "pnl": pnl
-                    })
-        
-        return {
-            "status": "running" if getattr(bot, 'running', False) else "stopped",
-            "positions": positions,
-            "portfolio_value": float(balance.get('ZUSD', 0)),
-            "daily_pnl": getattr(bot, 'daily_pnl', 0)
-        }
-    except Exception as e:
-        logger.error(f"Error getting bot status: {e}")
-        return {
-            "status": "error",
-            "positions": [],
-            "portfolio_value": 0,
-            "daily_pnl": 0
-        }
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[int, WebSocket] = {}
 
-@router.post("/start-bot/{user_id}")
-async def start_bot(user_id: int, credentials: KrakenCredentials):
-    logger.info(f"Starting bot for user {user_id}")
-    if not BOT_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Trading bot not available")
-        
-    if user_id in active_bots:
-        raise HTTPException(status_code=400, detail="Bot already running")
-    
+    async def connect(self, user_id: int, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+        await bot_manager.register_websocket(user_id, websocket)
+
+    def disconnect(self, user_id: int):
+        self.active_connections.pop(user_id, None)
+        asyncio.create_task(bot_manager.remove_websocket(user_id))
+
+    async def send_personal_message(self, message: str, user_id: int):
+        if user_id in self.active_connections:
+            await self.active_connections[user_id].send_text(message)
+
+manager = ConnectionManager()
+
+# API Endpoints
+@app.post("/api/start-bot/{user_id}", response_model=APIResponse)
+async def start_bot(user_id: int, credentials: BotCredentials):
+    """Start trading bot for a user with provided API credentials"""
     try:
-        logger.info("Creating new bot instance...")
-        bot = EnhancedKrakenCryptoBot(
-            api_key=credentials.api_key,
-            secret_key=credentials.secret_key
+        # Validate credentials format
+        if not credentials.api_key or not credentials.secret_key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid API credentials"
+            )
+
+        # Create and start bot
+        bot = await bot_manager.create_bot(
+            user_id,
+            credentials.api_key,
+            credentials.secret_key
         )
-        logger.info("Bot instance created successfully")
-        
-        active_bots[user_id] = {
-            "bot": bot,
-            "credentials": credentials.dict()
-        }
-        
-        # Start bot in background
-        asyncio.create_task(bot.run())
-        return {"status": "Bot started successfully"}
-    except Exception as e:
-        logger.error(f"Error starting bot: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/stop-bot/{user_id}")
+        return APIResponse(
+            status="success",
+            message="Bot started successfully",
+            data={"bot_status": "running"}
+        )
+
+    except Exception as e:
+        logger.error(f"Error starting bot: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@app.post("/api/stop-bot/{user_id}", response_model=APIResponse)
 async def stop_bot(user_id: int):
-    logger.info(f"Stopping bot for user {user_id}")
-    if not BOT_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Trading bot not available")
-        
-    if user_id not in active_bots:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    
+    """Stop trading bot for a user"""
     try:
-        bot = active_bots[user_id]["bot"]
-        if hasattr(bot, 'running'):
-            bot.running = False
-        del active_bots[user_id]
-        return {"status": "Bot stopped successfully"}
+        success = await bot_manager.stop_bot(user_id)
+        if success:
+            return APIResponse(
+                status="success",
+                message="Bot stopped successfully",
+                data={"bot_status": "stopped"}
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bot not found"
+        )
     except Exception as e:
-        logger.error(f"Error stopping bot: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error stopping bot: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
-# Include the router with prefix
-app.include_router(router, prefix="/api")
+@app.get("/api/bot-status/{user_id}", response_model=APIResponse)
+async def get_bot_status(user_id: int):
+    """Get current status and performance metrics of a user's bot"""
+    try:
+        status_data = bot_manager.get_bot_status(user_id)
+        return APIResponse(
+            status="success",
+            message="Bot status retrieved successfully",
+            data=status_data
+        )
+    except Exception as e:
+        logger.error(f"Error getting bot status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
-# Debug print all routes
-routes = [f"{route.path}" for route in app.routes]
-print("Available Routes:")
-for route in routes:
-    print(f"  {route}")
+@app.get("/api/performance/{user_id}", response_model=APIResponse)
+async def get_performance_history(user_id: int):
+    """Get historical performance data for a user's bot"""
+    try:
+        bot = bot_manager.get_bot(user_id)
+        if not bot:
+            return APIResponse(
+                status="success",
+                message="No active bot found",
+                data={"performance": []}
+            )
 
-# If running directly
+        status_data = bot_manager.get_bot_status(user_id)
+        return APIResponse(
+            status="success",
+            message="Performance data retrieved successfully",
+            data={"performance": status_data.get('performance', [])}
+        )
+    except Exception as e:
+        logger.error(f"Error getting performance data: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@app.get("/api/positions/{user_id}", response_model=APIResponse)
+async def get_active_positions(user_id: int):
+    """Get current active positions for a user's bot"""
+    try:
+        status_data = bot_manager.get_bot_status(user_id)
+        return APIResponse(
+            status="success",
+            message="Positions retrieved successfully",
+            data={"positions": status_data.get('positions', [])}
+        )
+    except Exception as e:
+        logger.error(f"Error getting positions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+# WebSocket endpoint for real-time updates
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    """WebSocket connection for real-time bot updates"""
+    try:
+        await manager.connect(user_id, websocket)
+        try:
+            while True:
+                # Keep connection alive and handle incoming messages
+                data = await websocket.receive_text()
+                try:
+                    message = json.loads(data)
+                    if message.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                except json.JSONDecodeError:
+                    pass
+        except WebSocketDisconnect:
+            manager.disconnect(user_id)
+    except Exception as e:
+        logger.error(f"WebSocket error: {str(e)}")
+        manager.disconnect(user_id)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+# Error handlers
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return {
+        "status": "error",
+        "message": str(exc.detail),
+        "code": exc.status_code
+    }
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    logger.error(f"Unhandled exception: {str(exc)}")
+    return {
+        "status": "error",
+        "message": "Internal server error",
+        "code": 500
+    }
+
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
