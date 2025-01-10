@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
 import PerformanceChart from './PerformanceChart';
 import ConfidenceIndicator from './ConfidenceIndicator';
+import { dashboardStyles as styles } from '../styles/dashboardStyles'; 
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const USER_ID = 1;
