@@ -1,11 +1,9 @@
-
 // TradingDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, DollarSign, TrendingUp } from 'lucide-react';
-import PortfolioReturnsChart from './PortfolioReturnsChart';
+import PerformanceChart from './PerformanceChart';
 import ConfidenceIndicator from './ConfidenceIndicator';
-import { dashboardStyles as styles } from '../styles/dashboardStyles';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const USER_ID = 1;
@@ -99,55 +97,55 @@ const TradingDashboard = () => {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className={styles.cardGrid}>
-          <div className={styles.card}>
-            <div className={styles.statsContainer}>
-              <DollarSign className={styles.icon} />
-              <div className="ml-4">
-                <p className={styles.cardTitle}>Portfolio Value</p>
-                <p className={styles.cardValue}>
-                  ${botData.portfolio_value.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className={styles.card}>
-            <div className={styles.statsContainer}>
-              <TrendingUp className={styles.icon} />
-              <div className="ml-4">
-                <p className={styles.cardTitle}>24h Profit/Loss</p>
-                <p className={`${styles.cardValue} ${
-                  botData.daily_pnl >= 0 ? 'text-green-500' : 'text-red-500'
-                }`}>
-                  {botData.daily_pnl >= 0 ? '+' : ''}{botData.daily_pnl.toFixed(2)}%
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className={styles.card}>
-            <div className={styles.statsContainer}>
-              <Activity className={styles.icon} />
-              <div className="ml-4">
-                <p className={styles.cardTitle}>Active Positions</p>
-                <p className={styles.cardValue}>
-                  {botData.positions.length}
-                </p>
-              </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-[#001F3F] p-6 rounded-lg">
+          <div className="flex items-center">
+            <DollarSign className="h-8 w-8 text-[#87CEEB]" />
+            <div className="ml-4">
+              <p className="text-gray-400">Portfolio Value</p>
+              <p className="text-2xl font-bold text-[#87CEEB]">
+                ${botData.portfolio_value.toFixed(2)}
+              </p>
             </div>
           </div>
         </div>
 
+        <div className="bg-[#001F3F] p-6 rounded-lg">
+          <div className="flex items-center">
+            <TrendingUp className="h-8 w-8 text-[#87CEEB]" />
+            <div className="ml-4">
+              <p className="text-gray-400">24h Profit/Loss</p>
+              <p className={`text-2xl font-bold ${
+                botData.daily_pnl >= 0 ? 'text-green-500' : 'text-red-500'
+              }`}>
+                {botData.daily_pnl >= 0 ? '+' : ''}{botData.daily_pnl.toFixed(2)}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#001F3F] p-6 rounded-lg">
+          <div className="flex items-center">
+            <Activity className="h-8 w-8 text-[#87CEEB]" />
+            <div className="ml-4">
+              <p className="text-gray-400">Active Positions</p>
+              <p className="text-2xl font-bold text-[#87CEEB]">
+                {botData.positions.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-          <PortfolioReturnsChart data={botData.returns_data} />
+          <PerformanceChart data={botData.performance_data} />
           <ConfidenceIndicator signals={botData.signals} />
         </div>
 
         {/* Positions Table */}
-        <div className={styles.tableContainer}>
+        <div className="bg-[#001F3F] p-6 rounded-lg">
           <h2 className="text-xl font-bold text-[#87CEEB] p-6">Active Positions</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-[#003366]">
