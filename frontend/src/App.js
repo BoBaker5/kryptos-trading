@@ -1,4 +1,10 @@
 import React, { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  LineChart, 
+  Activity, 
+  Settings 
+} from 'lucide-react';
 import DashboardLayout from './components/DashboardLayout';
 import TradingDashboard from './components/TradingDashboard';
 import DemoDashboard from './components/DemoDashboard';
