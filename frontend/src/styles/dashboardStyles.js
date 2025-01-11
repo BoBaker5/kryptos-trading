@@ -1,27 +1,27 @@
 // styles/dashboardStyles.js
 export const dashboardStyles = {
-  mainContainer: "min-h-screen bg-[#001F3F]",
+  mainContainer: "min-h-screen bg-[#001F3F] p-4",
   contentContainer: "max-w-7xl mx-auto px-8 py-6",
 
   // Cards
   cardGrid: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-8",
-  card: "bg-[#002851] rounded-lg shadow-sm p-6 border border-[#003366]",
+  card: "bg-[#002851] rounded-lg shadow-lg p-6",
   cardTitle: "text-sm font-medium text-gray-400",
   cardValue: "text-2xl font-bold text-[#87CEEB] mt-2",
 
   // Stats
   statsContainer: "flex justify-between items-start",
-  iconContainer: "h-10 w-10 rounded-lg border border-[#003366] flex items-center justify-center",
+  iconContainer: "h-10 w-10 rounded-lg flex items-center justify-center",
   icon: "h-6 w-6 text-[#87CEEB]",
 
   // Chart
-  chartCard: "bg-[#002851] rounded-lg shadow-sm p-6 border border-gray-200",
+  chartCard: "bg-[#002851] rounded-lg shadow-lg p-6",
   chartTitle: "text-lg font-semibold text-[#87CEEB]",
 
   // Table
-  tableContainer: "bg-[#002851] rounded-lg shadow-sm border border-gray-200",
-  tableHeader: "px-6 py-3 border border-gray-200",
-  tableCell: "text-lg font-semibold text-gray-900",
+  tableContainer: "bg-[#002851] rounded-lg shadow-lg",
+  tableHeader: "px-6 py-3 border-b border-[#003366]",
+  tableCell: "px-6 py-4 text-[#87CEEB]",
 
   // Status badge
   statusBadge: {
