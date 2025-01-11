@@ -14,21 +14,42 @@ sys.path.append(str(BOT_DIR))
 
 try:
     from kraken_crypto_bot_ai import EnhancedKrakenCryptoBot
+    from bot.demo_bot import DemoTradingBot
     BOT_AVAILABLE = True
-    print("Successfully imported trading bot")
+    print("Successfully imported trading bots")
 except ImportError as e:
-    print(f"Could not import trading bot: {e}")
+    print(f"Could not import trading bots: {e}")
     BOT_AVAILABLE = False
     EnhancedKrakenCryptoBot = None
+    DemoTradingBot = None
 
 logger = logging.getLogger(__name__)
 
 class BotManager:
     def __init__(self):
+        # Real trading bots
         self.active_bots: Dict[int, 'EnhancedKrakenCryptoBot'] = {}
         self.websocket_connections: Dict[int, WebSocket] = {}
         self.performance_data: Dict[int, list] = {}
         self.update_tasks: Dict[int, asyncio.Task] = {}
+        
+        # Demo bot
+        self.demo_bot = None
+        self.demo_performance_data = []
+        self.demo_websocket_connections: Dict[int, WebSocket] = {}
+        
+        # Start demo bot
+        asyncio.create_task(self.initialize_demo_bot())
+
+    async def initialize_demo_bot(self):
+        """Initialize and start demo bot"""
+        try:
+            self.demo_bot = DemoTradingBot(initial_balance=10000.0)
+            asyncio.create_task(self.demo_bot.run())
+            asyncio.create_task(self._demo_periodic_updates())
+            logger.info("Demo bot initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing demo bot: {str(e)}")
 
     async def create_bot(self, user_id: int, api_key: str, secret_key: str):
         """Create and initialize a new trading bot"""
@@ -89,16 +110,22 @@ class BotManager:
             logger.error(f"Error stopping bot for user {user_id}: {str(e)}")
             return False
 
-    async def register_websocket(self, user_id: int, websocket: WebSocket):
+    async def register_websocket(self, user_id: int, websocket: WebSocket, is_demo: bool = False):
         """Register websocket connection for real-time updates"""
-        self.websocket_connections[user_id] = websocket
+        if is_demo:
+            self.demo_websocket_connections[user_id] = websocket
+        else:
+            self.websocket_connections[user_id] = websocket
 
-    async def remove_websocket(self, user_id: int):
+    async def remove_websocket(self, user_id: int, is_demo: bool = False):
         """Remove websocket connection"""
-        self.websocket_connections.pop(user_id, None)
+        if is_demo:
+            self.demo_websocket_connections.pop(user_id, None)
+        else:
+            self.websocket_connections.pop(user_id, None)
 
     async def _periodic_updates(self, user_id: int):
-        """Periodic updates for bot status and performance"""
+        """Periodic updates for real bot status and performance"""
         try:
             while True:
                 await self._update_performance(user_id)
@@ -108,6 +135,34 @@ class BotManager:
             logger.info(f"Update task cancelled for user {user_id}")
         except Exception as e:
             logger.error(f"Error in periodic updates for user {user_id}: {str(e)}")
+
+    async def _demo_periodic_updates(self):
+        """Periodic updates for demo bot"""
+        try:
+            while True:
+                if self.demo_bot:
+                    # Update demo performance data
+                    status = self.demo_bot.get_status()
+                    self.demo_performance_data.append({
+                        'timestamp': datetime.now().isoformat(),
+                        'value': status['portfolio_value'],
+                        'pnl': status['returns']
+                    })
+                    
+                    # Keep last 24 hours
+                    cutoff = datetime.now() - timedelta(hours=24)
+                    self.demo_performance_data = [
+                        d for d in self.demo_performance_data 
+                        if datetime.fromisoformat(d['timestamp']) > cutoff
+                    ]
+                    
+                    # Send updates to all demo websocket connections
+                    await self._send_demo_websocket_updates()
+                
+                await asyncio.sleep(5)
+                
+        except Exception as e:
+            logger.error(f"Error in demo periodic updates: {str(e)}")
 
     async def _update_performance(self, user_id: int):
         """Update bot performance metrics"""
@@ -148,7 +203,7 @@ class BotManager:
             logger.error(f"Error updating performance for user {user_id}: {str(e)}")
 
     async def _send_websocket_update(self, user_id: int):
-        """Send update via websocket"""
+        """Send update via websocket for real bot"""
         try:
             websocket = self.websocket_connections.get(user_id)
             if not websocket:
@@ -181,9 +236,43 @@ class BotManager:
             logger.error(f"Error sending websocket update for user {user_id}: {str(e)}")
             await self.remove_websocket(user_id)
 
-    def get_bot_status(self, user_id: int) -> dict:
+    async def _send_demo_websocket_updates(self):
+        """Send updates to all demo websocket connections"""
+        if not self.demo_bot:
+            return
+            
+        status = self.demo_bot.get_status()
+        update_data = {
+            'status': status['status'],
+            'portfolio_value': status['portfolio_value'],
+            'positions': status['positions'],
+            'performance': self.demo_performance_data,
+            'trades': status['trades'],
+            'signals': status.get('signals', {})
+        }
+        
+        for user_id, websocket in list(self.demo_websocket_connections.items()):
+            try:
+                await websocket.send_json(update_data)
+            except Exception as e:
+                logger.error(f"Error sending demo update to user {user_id}: {str(e)}")
+                await self.remove_websocket(user_id, is_demo=True)
+
+    def get_bot_status(self, user_id: int, is_demo: bool = False) -> dict:
         """Get current bot status and performance"""
         try:
+            if is_demo:
+                if self.demo_bot:
+                    status = self.demo_bot.get_status()
+                    status['performance'] = self.demo_performance_data
+                    return status
+                return {
+                    'status': 'stopped',
+                    'portfolio_value': 0,
+                    'positions': [],
+                    'performance': []
+                }
+                
             bot = self.active_bots.get(user_id)
             if not bot:
                 return {
@@ -210,8 +299,19 @@ class BotManager:
             }
             
         except Exception as e:
-            logger.error(f"Error getting bot status for user {user_id}: {str(e)}")
+            logger.error(f"Error getting {'demo' if is_demo else ''} bot status: {str(e)}")
             return {
                 'status': 'error',
                 'message': str(e)
             }
+
+    async def stop_all(self):
+        """Stop all bots including demo"""
+        # Stop all real bots
+        for user_id in list(self.active_bots.keys()):
+            await self.stop_bot(user_id)
+            
+        # Stop demo bot
+        if self.demo_bot:
+            self.demo_bot.stop()
+            self.demo_bot = None
