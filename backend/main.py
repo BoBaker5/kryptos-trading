@@ -48,19 +48,29 @@ class APIResponse(BaseModel):
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, WebSocket] = {}
+        self.demo_connections: Dict[int, WebSocket] = {}
 
-    async def connect(self, user_id: int, websocket: WebSocket):
+    async def connect(self, user_id: int, websocket: WebSocket, is_demo: bool = False):
         await websocket.accept()
-        self.active_connections[user_id] = websocket
-        await bot_manager.register_websocket(user_id, websocket)
+        if is_demo:
+            self.demo_connections[user_id] = websocket
+            await bot_manager.register_websocket(user_id, websocket, is_demo=True)
+        else:
+            self.active_connections[user_id] = websocket
+            await bot_manager.register_websocket(user_id, websocket)
 
-    def disconnect(self, user_id: int):
-        self.active_connections.pop(user_id, None)
-        asyncio.create_task(bot_manager.remove_websocket(user_id))
+    def disconnect(self, user_id: int, is_demo: bool = False):
+        if is_demo:
+            self.demo_connections.pop(user_id, None)
+            asyncio.create_task(bot_manager.remove_websocket(user_id, is_demo=True))
+        else:
+            self.active_connections.pop(user_id, None)
+            asyncio.create_task(bot_manager.remove_websocket(user_id))
 
-    async def send_personal_message(self, message: str, user_id: int):
-        if user_id in self.active_connections:
-            await self.active_connections[user_id].send_text(message)
+    async def send_personal_message(self, message: str, user_id: int, is_demo: bool = False):
+        connections = self.demo_connections if is_demo else self.active_connections
+        if user_id in connections:
+            await connections[user_id].send_text(message)
 
 manager = ConnectionManager()
 
@@ -134,46 +144,19 @@ async def get_bot_status(user_id: int):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-async def get_bot_status(user_id: int):
+
+@app.get("/api/demo-status", response_model=APIResponse)
+async def get_demo_status():
+    """Get demo bot status"""
     try:
-        bot = bot_manager.get_bot(user_id)
-        if not bot:
-            return {
-                "status": "stopped",
-                "positions": [],
-                "portfolio_value": 0,
-                "daily_pnl": 0,
-                "returns_data": [],
-                "signals": []
-            }
-
-        # Get historical returns data for the chart
-        returns_data = []
-        for data_point in bot.performance_metrics:
-            returns_data.append({
-                "timestamp": data_point['timestamp'],
-                "return": ((data_point['value'] - bot.initial_balance) / bot.initial_balance) * 100
-            })
-
-        # Get current signals if available
-        signals = []
-        if hasattr(bot, 'current_signals'):
-            for symbol, signal in bot.current_signals.items():
-                signals.append({
-                    "symbol": symbol,
-                    "signal": signal['action'],
-                    "confidence": signal['confidence']
-                })
-
-        return {
-            "status": "running" if bot.running else "stopped",
-            "positions": bot.position_tracker.positions,
-            "portfolio_value": bot.portfolio_value,
-            "daily_pnl": bot.daily_pnl,
-            "returns_data": returns_data,
-            "signals": signals
-        }
+        status_data = bot_manager.get_bot_status(0, is_demo=True)
+        return APIResponse(
+            status="success",
+            message="Demo bot status retrieved successfully",
+            data=status_data
+        )
     except Exception as e:
+        logger.error(f"Error getting demo status: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
@@ -204,6 +187,23 @@ async def get_performance_history(user_id: int):
             detail=str(e)
         )
 
+@app.get("/api/demo-performance", response_model=APIResponse)
+async def get_demo_performance():
+    """Get demo bot performance history"""
+    try:
+        status_data = bot_manager.get_bot_status(0, is_demo=True)
+        return APIResponse(
+            status="success",
+            message="Demo performance data retrieved successfully",
+            data={"performance": status_data.get('performance', [])}
+        )
+    except Exception as e:
+        logger.error(f"Error getting demo performance: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 @app.get("/api/positions/{user_id}", response_model=APIResponse)
 async def get_active_positions(user_id: int):
     """Get current active positions for a user's bot"""
@@ -221,7 +221,24 @@ async def get_active_positions(user_id: int):
             detail=str(e)
         )
 
-# WebSocket endpoint for real-time updates
+@app.get("/api/demo-positions", response_model=APIResponse)
+async def get_demo_positions():
+    """Get current demo bot positions"""
+    try:
+        status_data = bot_manager.get_bot_status(0, is_demo=True)
+        return APIResponse(
+            status="success",
+            message="Demo positions retrieved successfully",
+            data={"positions": status_data.get('positions', [])}
+        )
+    except Exception as e:
+        logger.error(f"Error getting demo positions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+# WebSocket endpoints for real-time updates
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
     """WebSocket connection for real-time bot updates"""
@@ -243,11 +260,37 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
         logger.error(f"WebSocket error: {str(e)}")
         manager.disconnect(user_id)
 
+@app.websocket("/ws/demo/{user_id}")
+async def demo_websocket_endpoint(websocket: WebSocket, user_id: int):
+    """WebSocket connection for real-time demo bot updates"""
+    try:
+        await manager.connect(user_id, websocket, is_demo=True)
+        try:
+            while True:
+                # Keep connection alive and handle incoming messages
+                data = await websocket.receive_text()
+                try:
+                    message = json.loads(data)
+                    if message.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                except json.JSONDecodeError:
+                    pass
+        except WebSocketDisconnect:
+            manager.disconnect(user_id, is_demo=True)
+    except Exception as e:
+        logger.error(f"Demo WebSocket error: {str(e)}")
+        manager.disconnect(user_id, is_demo=True)
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    demo_status = "running" if bot_manager.demo_bot and bot_manager.demo_bot.running else "stopped"
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "demo_bot": demo_status
+    }
 
 # Error handlers
 @app.exception_handler(HTTPException)
