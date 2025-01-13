@@ -1,0 +1,15 @@
+[Unit]
+Description=Kryptos Trading Bots
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/kryptos
+Environment="PATH=/home/ubuntu/kryptos/venv/bin"
+ExecStart=/home/ubuntu/kryptos/venv/bin/python3 run_bots.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
