@@ -7,8 +7,8 @@ from pathlib import Path
 import sys
 from fastapi import WebSocket
 
-from demo_bot import DemoTradingBot
-from kraken_crypto_bot_ai import EnhancedKrakenCryptoBot
+from .demo_bot import DemoKrakenBot  # Note the '.' for relative import
+from .kraken_crypto_bot_ai import EnhancedKrakenCryptoBott
 
 logger = logging.getLogger(__name__)
 
