@@ -565,121 +565,121 @@ class PositionTracker:
         return None
 
 class DemoKrakenBot:
-def __init__(self):
-    """Initialize the demo trading bot"""
-    # Initialize with demo credentials since we're just using public data
-    super().__init__(api_key="demo", secret_key="demo")
-        
-    # Initialize logging first
-    self.logger = self._setup_logging()
-
-    try:
-        # Initialize Kraken API with rate limiting
-        self.kraken = krakenex.API(api_key="demo", secret_key="demo")
-        self.k = KrakenAPI(self.kraken, retry=0.5)
-        self.running = True
-
-        # Add missing attributes
-        self.is_initially_trained = False
-        self.training_completed = False
-        self.min_training_data = 100
-        self.initial_training_hours = 1
-        self.start_time = datetime.now()
-        
-        # Initialize MLModelManager and related attributes
-        self.model_manager = MLModelManager()
-        self.model_name = 'trading_model.joblib'
-        self.db_name = 'crypto_trading.db'
-        self.is_initially_trained = False
-        self.training_completed = False
-
-        self.ai_enhancer = AITradingEnhancer()
-        self.ai_trained = False
-
-        # Initialize demo account state
-        self.demo_balance = {
-            'ZUSD': 100000.0,  # Starting balance
-            'SOLUSD': 0,
-            'AVAXUSD': 0,
-            'XRPUSD': 0,
-            'XDGUSD': 0,
-            'SHIBUSD': 0,
-            'PEPEUSD': 0
-        }
-        
-        self.demo_positions = {}
-        self.trade_history = []
-        self.portfolio_history = [{
-            'timestamp': datetime.now(),
-            'balance': 100000.0,
-            'equity': 100000.0
-        }]
-
-        # Market conditions for smaller account
-        self.market_conditions = {
-            'high_volatility': 0.05,    # Lower threshold
-            'low_liquidity': 1000,      # Lower requirement
-            'excessive_spread': 0.03     # Lower threshold
-        }
-
-        # Trading pairs with adjusted allocations for small account
-        self.symbols = {
-            "SOLUSD": 0.20,    # SOL/USD
-            "AVAXUSD": 0.20,   # AVAX/USD
-            "XRPUSD": 0.20,    # XRP/USD
-            "XDGUSD": 0.15,    # DOGE/USD
-            "SHIBUSD": 0.10,   # SHIB/USD
-            "PEPEUSD": 0.15    # PEPE/USD
-        }
-
-        # Adjust parameters for smaller account
-        self.max_drawdown = 0.10        # Reduced from 0.15
-        self.trailing_stop_pct = 0.03   # Tighter stop
-        self.max_trades_per_hour = 3    # Fewer trades
-        self.trade_cooldown = 300       # Longer cooldown
-        self.last_trade_time = {}
-        self.trade_history = {}
-        self.performance_metrics = {}
-
-        # Technical indicators
-        self.sma_short = 20
-        self.sma_long = 50
-        self.rsi_period = 14
-        self.rsi_oversold = 35
-        self.rsi_overbought = 65
-        self.macd_fast = 12
-        self.macd_slow = 26
-        self.macd_signal = 9
-        self.volatility_window = 20
-        self.volume_ma_window = 20
-        self.prediction_threshold = 0.2
-
-        self.timeframe = 5  # 1 minute intervals
-
-        # Adjust risk parameters for smaller account
-        self.max_position_size = 0.3    # Increased to allow meaningful positions
-        self.min_position_value = 2.0    # Reduced minimum
-        self.max_total_risk = 0.15       # Reduced risk
-        self.stop_loss_pct = 0.03        # Tighter stop loss
-        self.take_profit_pct = 0.05      # Lower but realistic profit target
-
-        self.min_zusd_balance = 5.0
-
-        # Rate limiting
-        self.last_api_call = time.time()
-        self.api_call_delay = 1.0
-        self.api_retry_delay = 1  # Initial retry delay for exceeded rate limits
-        self.max_retry_delay = 60
-
-        # Load saved state if available
-        self.load_demo_state()
-
-        self.market_state = {symbol: {'trend': None, 'volatility': None} for symbol in self.symbols}
-        self.logger.info("Demo Kraken trading bot initialization completed successfully")
-
-    except Exception as e:
-        self.logger.error(f"Initialization error: {str(e)}")
-        raise
+    def __init__(self):
+        """Initialize the demo trading bot"""
+        # Initialize with demo credentials since we're just using public data
+        super().__init__(api_key="demo", secret_key="demo")
+            
+        # Initialize logging first
+        self.logger = self._setup_logging()
+    
+        try:
+            # Initialize Kraken API with rate limiting
+            self.kraken = krakenex.API(api_key="demo", secret_key="demo")
+            self.k = KrakenAPI(self.kraken, retry=0.5)
+            self.running = True
+    
+            # Add missing attributes
+            self.is_initially_trained = False
+            self.training_completed = False
+            self.min_training_data = 100
+            self.initial_training_hours = 1
+            self.start_time = datetime.now()
+            
+            # Initialize MLModelManager and related attributes
+            self.model_manager = MLModelManager()
+            self.model_name = 'trading_model.joblib'
+            self.db_name = 'crypto_trading.db'
+            self.is_initially_trained = False
+            self.training_completed = False
+    
+            self.ai_enhancer = AITradingEnhancer()
+            self.ai_trained = False
+    
+            # Initialize demo account state
+            self.demo_balance = {
+                'ZUSD': 100000.0,  # Starting balance
+                'SOLUSD': 0,
+                'AVAXUSD': 0,
+                'XRPUSD': 0,
+                'XDGUSD': 0,
+                'SHIBUSD': 0,
+                'PEPEUSD': 0
+            }
+            
+            self.demo_positions = {}
+            self.trade_history = []
+            self.portfolio_history = [{
+                'timestamp': datetime.now(),
+                'balance': 100000.0,
+                'equity': 100000.0
+            }]
+    
+            # Market conditions for smaller account
+            self.market_conditions = {
+                'high_volatility': 0.05,    # Lower threshold
+                'low_liquidity': 1000,      # Lower requirement
+                'excessive_spread': 0.03     # Lower threshold
+            }
+    
+            # Trading pairs with adjusted allocations for small account
+            self.symbols = {
+                "SOLUSD": 0.20,    # SOL/USD
+                "AVAXUSD": 0.20,   # AVAX/USD
+                "XRPUSD": 0.20,    # XRP/USD
+                "XDGUSD": 0.15,    # DOGE/USD
+                "SHIBUSD": 0.10,   # SHIB/USD
+                "PEPEUSD": 0.15    # PEPE/USD
+            }
+    
+            # Adjust parameters for smaller account
+            self.max_drawdown = 0.10        # Reduced from 0.15
+            self.trailing_stop_pct = 0.03   # Tighter stop
+            self.max_trades_per_hour = 3    # Fewer trades
+            self.trade_cooldown = 300       # Longer cooldown
+            self.last_trade_time = {}
+            self.trade_history = {}
+            self.performance_metrics = {}
+    
+            # Technical indicators
+            self.sma_short = 20
+            self.sma_long = 50
+            self.rsi_period = 14
+            self.rsi_oversold = 35
+            self.rsi_overbought = 65
+            self.macd_fast = 12
+            self.macd_slow = 26
+            self.macd_signal = 9
+            self.volatility_window = 20
+            self.volume_ma_window = 20
+            self.prediction_threshold = 0.2
+    
+            self.timeframe = 5  # 1 minute intervals
+    
+            # Adjust risk parameters for smaller account
+            self.max_position_size = 0.3    # Increased to allow meaningful positions
+            self.min_position_value = 2.0    # Reduced minimum
+            self.max_total_risk = 0.15       # Reduced risk
+            self.stop_loss_pct = 0.03        # Tighter stop loss
+            self.take_profit_pct = 0.05      # Lower but realistic profit target
+    
+            self.min_zusd_balance = 5.0
+    
+            # Rate limiting
+            self.last_api_call = time.time()
+            self.api_call_delay = 1.0
+            self.api_retry_delay = 1  # Initial retry delay for exceeded rate limits
+            self.max_retry_delay = 60
+    
+            # Load saved state if available
+            self.load_demo_state()
+    
+            self.market_state = {symbol: {'trend': None, 'volatility': None} for symbol in self.symbols}
+            self.logger.info("Demo Kraken trading bot initialization completed successfully")
+    
+        except Exception as e:
+            self.logger.error(f"Initialization error: {str(e)}")
+            raise
 
     def get_demo_balance(self):
     """Get current demo account balance"""
