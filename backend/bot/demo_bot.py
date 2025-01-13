@@ -681,127 +681,127 @@ class DemoKrakenBot:
             self.logger.error(f"Initialization error: {str(e)}")
             raise
 
-    def get_demo_balance(self):
-    """Get current demo account balance"""
-    try:
-        # Calculate total value of positions
-        position_value = 0
-        for symbol, position in self.demo_positions.items():
-            current_price = self.get_latest_price(symbol)
-            if current_price:
-                position_value += position['volume'] * current_price
+def get_demo_balance(self):
+"""Get current demo account balance"""
+try:
+    # Calculate total value of positions
+    position_value = 0
+    for symbol, position in self.demo_positions.items():
+        current_price = self.get_latest_price(symbol)
+        if current_price:
+            position_value += position['volume'] * current_price
 
-        # Calculate total equity
-        total_equity = self.demo_balance['ZUSD'] + position_value
+    # Calculate total equity
+    total_equity = self.demo_balance['ZUSD'] + position_value
 
-        balance_info = pd.Series(self.demo_balance)
-        
-        # Log balance info
-        self.logger.info("\n=== Demo Account Balance ===")
-        self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
-        self.logger.info(f"Position Value: ${position_value:.2f}")
-        self.logger.info(f"Total Equity: ${total_equity:.2f}")
-        
-        for currency, amount in self.demo_balance.items():
-            if currency != 'ZUSD' and amount > 0:
-                self.logger.info(f"{currency}: {amount:.8f}")
+    balance_info = pd.Series(self.demo_balance)
+    
+    # Log balance info
+    self.logger.info("\n=== Demo Account Balance ===")
+    self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
+    self.logger.info(f"Position Value: ${position_value:.2f}")
+    self.logger.info(f"Total Equity: ${total_equity:.2f}")
+    
+    for currency, amount in self.demo_balance.items():
+        if currency != 'ZUSD' and amount > 0:
+            self.logger.info(f"{currency}: {amount:.8f}")
 
-        return balance_info
+    return balance_info
 
-    except Exception as e:
-        self.logger.error(f"Error getting demo balance: {str(e)}")
-        return pd.Series(self.demo_balance)
+except Exception as e:
+    self.logger.error(f"Error getting demo balance: {str(e)}")
+    return pd.Series(self.demo_balance)
 
-def get_demo_positions(self):
-    """Get current demo positions"""
-    try:
-        formatted_positions = []
-        for symbol, pos in self.demo_positions.items():
-            current_price = self.get_latest_price(symbol)
-            if current_price:
-                entry_price = pos['entry_price']
-                volume = pos['volume']
-                pnl = (current_price - entry_price) * volume
-                pnl_percentage = ((current_price - entry_price) / entry_price) * 100
-
-                formatted_pos = {
-                    'pair': symbol,
-                    'vol': str(volume),
-                    'cost': str(entry_price * volume),
-                    'price': str(current_price),
-                    'pnl': str(pnl),
-                    'pnl_percentage': str(pnl_percentage),
-                    'entry_time': pos['entry_time'].isoformat()
-                }
-                formatted_positions.append(formatted_pos)
-
-        # Log positions
-        if formatted_positions:
-            self.logger.info("\n=== Demo Positions ===")
-            for pos in formatted_positions:
-                self.logger.info(f"{pos['pair']}: {float(pos['vol']):.8f} @ ${float(pos['price']):.8f}")
-                self.logger.info(f"P&L: ${float(pos['pnl']):.2f} ({float(pos['pnl_percentage']):.2f}%)")
-
-        return formatted_positions
-
-    except Exception as e:
-        self.logger.error(f"Error getting demo positions: {str(e)}")
-        return []
-
-def calculate_total_equity(self):
-    """Calculate total portfolio value including positions"""
-    try:
-        equity = self.demo_balance['ZUSD']
-        
-        for symbol, position in self.demo_positions.items():
-            current_price = self.get_latest_price(symbol)
-            if current_price:
-                position_value = position['volume'] * current_price
-                equity += position_value
-        
-        return equity
-
-    except Exception as e:
-        self.logger.error(f"Error calculating total equity: {str(e)}")
-        return self.demo_balance['ZUSD']
-
-def get_portfolio_metrics(self):
-    """Get current portfolio performance metrics"""
-    try:
-        current_equity = self.calculate_total_equity()
-        initial_balance = 100000.0
-        
-        metrics = {
-            'current_equity': current_equity,
-            'initial_balance': initial_balance,
-            'total_pnl': current_equity - initial_balance,
-            'pnl_percentage': ((current_equity - initial_balance) / initial_balance) * 100,
-            'positions': self.demo_positions,
-            'balance': self.demo_balance,
-            'trade_history': self.trade_history[-10:],  # Last 10 trades
-            'portfolio_history': self.portfolio_history[-100:]  # Last 100 data points
-        }
-
-        # Log metrics
-        self.logger.info("\n=== Portfolio Metrics ===")
-        self.logger.info(f"Current Equity: ${metrics['current_equity']:.2f}")
-        self.logger.info(f"Total P&L: ${metrics['total_pnl']:.2f} ({metrics['pnl_percentage']:.2f}%)")
-        
-        return metrics
-
-    except Exception as e:
-        self.logger.error(f"Error getting portfolio metrics: {str(e)}")
-        return {
-            'current_equity': self.demo_balance['ZUSD'],
-            'initial_balance': 100000.0,
-            'total_pnl': 0,
-            'pnl_percentage': 0,
-            'positions': {},
-            'balance': self.demo_balance,
-            'trade_history': [],
-            'portfolio_history': []
-        }
-        
+    def get_demo_positions(self):
+        """Get current demo positions"""
+        try:
+            formatted_positions = []
+            for symbol, pos in self.demo_positions.items():
+                current_price = self.get_latest_price(symbol)
+                if current_price:
+                    entry_price = pos['entry_price']
+                    volume = pos['volume']
+                    pnl = (current_price - entry_price) * volume
+                    pnl_percentage = ((current_price - entry_price) / entry_price) * 100
+    
+                    formatted_pos = {
+                        'pair': symbol,
+                        'vol': str(volume),
+                        'cost': str(entry_price * volume),
+                        'price': str(current_price),
+                        'pnl': str(pnl),
+                        'pnl_percentage': str(pnl_percentage),
+                        'entry_time': pos['entry_time'].isoformat()
+                    }
+                    formatted_positions.append(formatted_pos)
+    
+            # Log positions
+            if formatted_positions:
+                self.logger.info("\n=== Demo Positions ===")
+                for pos in formatted_positions:
+                    self.logger.info(f"{pos['pair']}: {float(pos['vol']):.8f} @ ${float(pos['price']):.8f}")
+                    self.logger.info(f"P&L: ${float(pos['pnl']):.2f} ({float(pos['pnl_percentage']):.2f}%)")
+    
+            return formatted_positions
+    
+        except Exception as e:
+            self.logger.error(f"Error getting demo positions: {str(e)}")
+            return []
+    
+    def calculate_total_equity(self):
+        """Calculate total portfolio value including positions"""
+        try:
+            equity = self.demo_balance['ZUSD']
+            
+            for symbol, position in self.demo_positions.items():
+                current_price = self.get_latest_price(symbol)
+                if current_price:
+                    position_value = position['volume'] * current_price
+                    equity += position_value
+            
+            return equity
+    
+        except Exception as e:
+            self.logger.error(f"Error calculating total equity: {str(e)}")
+            return self.demo_balance['ZUSD']
+    
+    def get_portfolio_metrics(self):
+        """Get current portfolio performance metrics"""
+        try:
+            current_equity = self.calculate_total_equity()
+            initial_balance = 100000.0
+            
+            metrics = {
+                'current_equity': current_equity,
+                'initial_balance': initial_balance,
+                'total_pnl': current_equity - initial_balance,
+                'pnl_percentage': ((current_equity - initial_balance) / initial_balance) * 100,
+                'positions': self.demo_positions,
+                'balance': self.demo_balance,
+                'trade_history': self.trade_history[-10:],  # Last 10 trades
+                'portfolio_history': self.portfolio_history[-100:]  # Last 100 data points
+            }
+    
+            # Log metrics
+            self.logger.info("\n=== Portfolio Metrics ===")
+            self.logger.info(f"Current Equity: ${metrics['current_equity']:.2f}")
+            self.logger.info(f"Total P&L: ${metrics['total_pnl']:.2f} ({metrics['pnl_percentage']:.2f}%)")
+            
+            return metrics
+    
+        except Exception as e:
+            self.logger.error(f"Error getting portfolio metrics: {str(e)}")
+            return {
+                'current_equity': self.demo_balance['ZUSD'],
+                'initial_balance': 100000.0,
+                'total_pnl': 0,
+                'pnl_percentage': 0,
+                'positions': {},
+                'balance': self.demo_balance,
+                'trade_history': [],
+                'portfolio_history': []
+            }
+            
     async def wait_for_api(self, exceeded_by=0):
         """Improved rate limiting with adaptive delays"""
         try:
