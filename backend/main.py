@@ -8,8 +8,8 @@ from datetime import datetime
 import json
 import asyncio
 
-from .bot_manager import BotManager
-from .database import get_db
+from bot_manager import BotManager
+from database import get_db
 from sqlalchemy.orm import Session
 
 # Setup logging
