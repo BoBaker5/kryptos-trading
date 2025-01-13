@@ -682,35 +682,35 @@ class DemoKrakenBot:
             raise
 
     def get_demo_balance(self):
-    """Get current demo account balance"""
-    try:
-        # Calculate total value of positions
-        position_value = 0
-        for symbol, position in self.demo_positions.items():
-            current_price = self.get_latest_price(symbol)
-            if current_price:
-                position_value += position['volume'] * current_price
-    
-        # Calculate total equity
-        total_equity = self.demo_balance['ZUSD'] + position_value
-    
-        balance_info = pd.Series(self.demo_balance)
+        """Get current demo account balance"""
+        try:
+            # Calculate total value of positions
+            position_value = 0
+            for symbol, position in self.demo_positions.items():
+                current_price = self.get_latest_price(symbol)
+                if current_price:
+                    position_value += position['volume'] * current_price
         
-        # Log balance info
-        self.logger.info("\n=== Demo Account Balance ===")
-        self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
-        self.logger.info(f"Position Value: ${position_value:.2f}")
-        self.logger.info(f"Total Equity: ${total_equity:.2f}")
+            # Calculate total equity
+            total_equity = self.demo_balance['ZUSD'] + position_value
         
-        for currency, amount in self.demo_balance.items():
-            if currency != 'ZUSD' and amount > 0:
-                self.logger.info(f"{currency}: {amount:.8f}")
-    
-        return balance_info
-    
-    except Exception as e:
-        self.logger.error(f"Error getting demo balance: {str(e)}")
-        return pd.Series(self.demo_balance)
+            balance_info = pd.Series(self.demo_balance)
+            
+            # Log balance info
+            self.logger.info("\n=== Demo Account Balance ===")
+            self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
+            self.logger.info(f"Position Value: ${position_value:.2f}")
+            self.logger.info(f"Total Equity: ${total_equity:.2f}")
+            
+            for currency, amount in self.demo_balance.items():
+                if currency != 'ZUSD' and amount > 0:
+                    self.logger.info(f"{currency}: {amount:.8f}")
+        
+            return balance_info
+        
+        except Exception as e:
+            self.logger.error(f"Error getting demo balance: {str(e)}")
+            return pd.Series(self.demo_balance)
     
         def get_demo_positions(self):
             """Get current demo positions"""
