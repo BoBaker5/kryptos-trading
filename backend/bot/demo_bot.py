@@ -2506,7 +2506,7 @@ async def main():
     api_key = "P6J5R5pPLXjRGiqgL/4j9ZNGN4bormuJEDTnvsT/NTk/uzQITcsLFiFa"
     secret_key = "FqCqZqTC+HWQ2b24BCWb24hnLieqDunV+4QgGR1098SrOEgXqRd6Yq/3Ih8bU9aussbBRBbhMQeVSUroFRX+PA=="
     
-    bot = EnhancedKrakenCryptoBot(api_key, secret_key)
+    bot = DemoKrakenBot(api_key, secret_key)
     
     try:
         await bot.run()
