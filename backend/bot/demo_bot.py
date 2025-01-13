@@ -569,7 +569,8 @@ class DemoKrakenBot:
         """Initialize the demo trading bot"""
         # Initialize logging first
         self.logger = self._setup_logging()
-    
+        self.db_name = 'crypto_trading.db'
+        
         try:
             # Initialize Kraken API with rate limiting
             self.kraken = krakenex.API()
