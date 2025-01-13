@@ -2250,7 +2250,7 @@ async def initialize_position_tracking(self):
             self.logger.error(f"Error monitoring positions: {str(e)}")
             self.position_tracker.positions = {}  # Reset on error
 
-    def load_demo_state(self):
+    def load_demo_state(self) -> None:
         """Load demo bot state from database"""
         try:
             conn = sqlite3.connect(self.db_name)
@@ -2271,12 +2271,11 @@ async def initialize_position_tracking(self):
             c.execute('''CREATE TABLE IF NOT EXISTS demo_portfolio_history
                         (timestamp TEXT, balance REAL, equity REAL)''')
     
-            # Try to load balance
+            # Load balance data
             c.execute('SELECT * FROM demo_balance')
             balance_data = c.fetchall()
             if balance_data:
                 self.demo_balance = {row[0]: row[1] for row in balance_data}
-            # If no saved balance, keep the default initialized in __init__
     
             # Load positions
             c.execute('SELECT * FROM demo_positions')
@@ -2330,9 +2329,8 @@ async def initialize_position_tracking(self):
             self.logger.info(f"Portfolio History: {len(self.portfolio_history)} entries")
     
         except Exception as e:
-            self.logger.error(f"Error loading demo state: {str(e)}")
-            # Keep default values initialized in __init__
-    
+            self.logger.error(f"Error loading demo state: {str(e)}")    
+
     def save_demo_state(self):
         """Save current demo state to database"""
         try:
