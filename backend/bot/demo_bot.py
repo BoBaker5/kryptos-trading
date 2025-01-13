@@ -2252,143 +2252,130 @@ async def initialize_position_tracking(self):
             self.logger.error(f"Error monitoring positions: {str(e)}")
             self.position_tracker.positions = {}  # Reset on error
 
-def save_demo_state(self):
-    """Save demo bot state to database"""
-    try:
-        conn = sqlite3.connect(self.db_name)
-        c = conn.cursor()
-
-        # Create tables if they don't exist
-        c.execute('''CREATE TABLE IF NOT EXISTS demo_balance
-                    (currency TEXT PRIMARY KEY, amount REAL)''')
-                    
-        c.execute('''CREATE TABLE IF NOT EXISTS demo_positions
-                    (symbol TEXT PRIMARY KEY, volume REAL, entry_price REAL, 
-                    entry_time TEXT, high_price REAL)''')
-                    
-        c.execute('''CREATE TABLE IF NOT EXISTS demo_trade_history
-                    (timestamp TEXT, symbol TEXT, type TEXT, price REAL,
-                    quantity REAL, value REAL, balance_after REAL)''')
-                    
-        c.execute('''CREATE TABLE IF NOT EXISTS demo_portfolio_history
-                    (timestamp TEXT, balance REAL, equity REAL)''')
-
-        # Save current balance
-        c.execute('DELETE FROM demo_balance')  # Clear existing
-        for currency, amount in self.demo_balance.items():
-            c.execute('INSERT INTO demo_balance VALUES (?, ?)',
-                     (currency, amount))
-
-        # Save positions
-        c.execute('DELETE FROM demo_positions')  # Clear existing
-        for symbol, pos in self.demo_positions.items():
-            c.execute('INSERT INTO demo_positions VALUES (?, ?, ?, ?, ?)',
-                     (symbol, pos['volume'], pos['entry_price'],
-                      pos['entry_time'].isoformat(), pos['high_price']))
-
-        # Save trade history
-        c.execute('DELETE FROM demo_trade_history')  # Clear existing
-        for trade in self.trade_history:
-            c.execute('''INSERT INTO demo_trade_history 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                     (trade['timestamp'].isoformat(), trade['symbol'],
-                      trade['type'], trade['price'], trade['quantity'],
-                      trade['value'], trade['balance_after']))
-
-        # Save portfolio history
-        c.execute('DELETE FROM demo_portfolio_history')  # Clear existing
-        for entry in self.portfolio_history:
-            c.execute('INSERT INTO demo_portfolio_history VALUES (?, ?, ?)',
-                     (entry['timestamp'].isoformat(), entry['balance'],
-                      entry['equity']))
-
-        conn.commit()
-        conn.close()
-        self.logger.info("Demo state saved successfully")
-        return True
-
-    except Exception as e:
-        self.logger.error(f"Error saving demo state: {str(e)}")
-        traceback.print_exc()
-        return False
-
-def load_demo_state(self):
-    """Load demo bot state from database"""
-    try:
-        conn = sqlite3.connect(self.db_name)
-        c = conn.cursor()
-
-        # Load balance
-        c.execute('SELECT * FROM demo_balance')
-        balance_data = c.fetchall()
-        if balance_data:
-            self.demo_balance = {row[0]: row[1] for row in balance_data}
-        else:
-            # Use default starting balance if no saved state
-            self.demo_balance = {'ZUSD': 100000.0}
-
-        # Load positions
-        c.execute('SELECT * FROM demo_positions')
-        position_data = c.fetchall()
-        self.demo_positions = {}
-        for row in position_data:
-            self.demo_positions[row[0]] = {
-                'volume': row[1],
-                'entry_price': row[2],
-                'entry_time': datetime.fromisoformat(row[3]),
-                'high_price': row[4]
-            }
-
-        # Load trade history
-        c.execute('SELECT * FROM demo_trade_history')
-        trade_data = c.fetchall()
-        self.trade_history = []
-        for row in trade_data:
-            self.trade_history.append({
-                'timestamp': datetime.fromisoformat(row[0]),
-                'symbol': row[1],
-                'type': row[2],
-                'price': row[3],
-                'quantity': row[4],
-                'value': row[5],
-                'balance_after': row[6]
-            })
-
-        # Load portfolio history
-        c.execute('SELECT * FROM demo_portfolio_history')
-        portfolio_data = c.fetchall()
-        self.portfolio_history = []
-        for row in portfolio_data:
-            self.portfolio_history.append({
-                'timestamp': datetime.fromisoformat(row[0]),
-                'balance': row[1],
-                'equity': row[2]
-            })
-
-        conn.close()
-        self.logger.info("Demo state loaded successfully")
-        
-        # Log current state
-        self.logger.info("\n=== Loaded Demo State ===")
-        self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
-        self.logger.info(f"Active Positions: {len(self.demo_positions)}")
-        self.logger.info(f"Trade History: {len(self.trade_history)} trades")
-        self.logger.info(f"Portfolio History: {len(self.portfolio_history)} entries")
-        return True
-
-    except Exception as e:
-        self.logger.error(f"Error loading demo state: {str(e)}")
-        traceback.print_exc()
-        # Use default values if load fails
-        self.demo_balance = {'ZUSD': 100000.0}
-        self.demo_positions = {}
-        self.trade_history = []
-        self.portfolio_history = [{
-            'timestamp': datetime.now(),
-            'balance': 100000.0,
-            'equity': 100000.0
-        }]
-        return False
+    def load_demo_state(self):
+        """Load demo bot state from database"""
+        try:
+            conn = sqlite3.connect(self.db_name)
+            c = conn.cursor()
+    
+            # Create tables if they don't exist
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_balance
+                        (currency TEXT PRIMARY KEY, amount REAL)''')
+                        
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_positions
+                        (symbol TEXT PRIMARY KEY, volume REAL, entry_price REAL, 
+                        entry_time TEXT, high_price REAL)''')
+                        
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_trade_history
+                        (timestamp TEXT, symbol TEXT, type TEXT, price REAL,
+                        quantity REAL, value REAL, balance_after REAL)''')
+                        
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_portfolio_history
+                        (timestamp TEXT, balance REAL, equity REAL)''')
+    
+            # Try to load balance
+            c.execute('SELECT * FROM demo_balance')
+            balance_data = c.fetchall()
+            if balance_data:
+                self.demo_balance = {row[0]: row[1] for row in balance_data}
+            # If no saved balance, keep the default initialized in __init__
+    
+            # Load positions
+            c.execute('SELECT * FROM demo_positions')
+            position_data = c.fetchall()
+            if position_data:
+                self.demo_positions = {}
+                for row in position_data:
+                    self.demo_positions[row[0]] = {
+                        'volume': row[1],
+                        'entry_price': row[2],
+                        'entry_time': datetime.fromisoformat(row[3]),
+                        'high_price': row[4]
+                    }
+    
+            # Load trade history
+            c.execute('SELECT * FROM demo_trade_history')
+            trade_data = c.fetchall()
+            if trade_data:
+                self.trade_history = []
+                for row in trade_data:
+                    self.trade_history.append({
+                        'timestamp': datetime.fromisoformat(row[0]),
+                        'symbol': row[1],
+                        'type': row[2],
+                        'price': row[3],
+                        'quantity': row[4],
+                        'value': row[5],
+                        'balance_after': row[6]
+                    })
+    
+            # Load portfolio history
+            c.execute('SELECT * FROM demo_portfolio_history ORDER BY timestamp DESC LIMIT 100')
+            portfolio_data = c.fetchall()
+            if portfolio_data:
+                self.portfolio_history = []
+                for row in portfolio_data:
+                    self.portfolio_history.append({
+                        'timestamp': datetime.fromisoformat(row[0]),
+                        'balance': row[1],
+                        'equity': row[2]
+                    })
+    
+            conn.close()
+            self.logger.info("Demo state loaded successfully")
+            
+            # Log current state
+            self.logger.info("\n=== Loaded Demo State ===")
+            self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
+            self.logger.info(f"Active Positions: {len(self.demo_positions)}")
+            self.logger.info(f"Trade History: {len(self.trade_history)} trades")
+            self.logger.info(f"Portfolio History: {len(self.portfolio_history)} entries")
+    
+        except Exception as e:
+            self.logger.error(f"Error loading demo state: {str(e)}")
+            # Keep default values initialized in __init__
+    
+    def save_demo_state(self):
+        """Save current demo state to database"""
+        try:
+            conn = sqlite3.connect(self.db_name)
+            c = conn.cursor()
+    
+            # Save current balance
+            c.execute('DELETE FROM demo_balance')
+            for currency, amount in self.demo_balance.items():
+                c.execute('INSERT INTO demo_balance VALUES (?, ?)',
+                         (currency, amount))
+    
+            # Save positions
+            c.execute('DELETE FROM demo_positions')
+            for symbol, pos in self.demo_positions.items():
+                c.execute('INSERT INTO demo_positions VALUES (?, ?, ?, ?, ?)',
+                         (symbol, pos['volume'], pos['entry_price'],
+                          pos['entry_time'].isoformat(), pos['high_price']))
+    
+            # Save trade history
+            c.execute('DELETE FROM demo_trade_history')
+            for trade in self.trade_history:
+                c.execute('''INSERT INTO demo_trade_history 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                         (trade['timestamp'].isoformat(), trade['symbol'],
+                          trade['type'], trade['price'], trade['quantity'],
+                          trade['value'], trade['balance_after']))
+    
+            # Save portfolio history
+            c.execute('DELETE FROM demo_portfolio_history')
+            for entry in self.portfolio_history:
+                c.execute('INSERT INTO demo_portfolio_history VALUES (?, ?, ?)',
+                         (entry['timestamp'].isoformat(), entry['balance'],
+                          entry['equity']))
+    
+            conn.commit()
+            conn.close()
+            self.logger.info("Demo state saved successfully")
+    
+        except Exception as e:
+            self.logger.error(f"Error saving demo state: {str(e)}")
 
 async def run(self):
     """Main run loop for demo trading bot"""
