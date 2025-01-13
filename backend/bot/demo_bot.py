@@ -564,7 +564,7 @@ class PositionTracker:
             }
         return None
 
-class EnhancedKrakenCryptoBot:
+class DemoKrakenBot:
 def __init__(self):
     """Initialize the demo trading bot"""
     # Initialize with demo credentials since we're just using public data
