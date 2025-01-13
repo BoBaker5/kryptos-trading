@@ -128,22 +128,33 @@ async def stop_bot(user_id: int):
             detail=str(e)
         )
 
-@app.get("/api/bot-status/{user_id}", response_model=APIResponse)
+@app.get("/api/bot-status/{user_id}")
 async def get_bot_status(user_id: int):
-    """Get current status and performance metrics of a user's bot"""
+    """Get current status and performance metrics"""
     try:
-        status_data = bot_manager.get_bot_status(user_id)
-        return APIResponse(
-            status="success",
-            message="Bot status retrieved successfully",
-            data=status_data
-        )
+        # Get bot status based on user_id
+        status_data = bot_manager.get_bot_status(user_id, is_demo=(user_id == 1))
+        
+        # Return status in format expected by frontend
+        return {
+            "status": status_data["status"],
+            "portfolio_value": status_data["portfolio_value"],
+            "positions": status_data["positions"],
+            "performance_data": status_data["performance_data"],
+            "daily_pnl": status_data["daily_pnl"],
+            "signals": status_data["signals"]
+        }
+        
     except Exception as e:
         logger.error(f"Error getting bot status: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return {
+            "status": "stopped",
+            "portfolio_value": 0,
+            "positions": [],
+            "performance_data": [],
+            "daily_pnl": 0,
+            "signals": []
+        }
 
 @app.get("/api/demo-status", response_model=APIResponse)
 async def get_demo_status():
