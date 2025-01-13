@@ -565,17 +565,14 @@ class PositionTracker:
         return None
 
 class DemoKrakenBot:
-    def __init__(self):
+    def __init__(self, initial_balance=100000.0):
         """Initialize the demo trading bot"""
-        # Initialize with demo credentials since we're just using public data
-        super().__init__(api_key="demo", secret_key="demo")
-            
         # Initialize logging first
         self.logger = self._setup_logging()
     
         try:
             # Initialize Kraken API with rate limiting
-            self.kraken = krakenex.API(api_key="demo", secret_key="demo")
+            self.kraken = krakenex.API()
             self.k = KrakenAPI(self.kraken, retry=0.5)
             self.running = True
     
@@ -598,7 +595,7 @@ class DemoKrakenBot:
     
             # Initialize demo account state
             self.demo_balance = {
-                'ZUSD': 100000.0,  # Starting balance
+                'ZUSD': initial_balance,  # Starting balance
                 'SOLUSD': 0,
                 'AVAXUSD': 0,
                 'XRPUSD': 0,
@@ -611,8 +608,8 @@ class DemoKrakenBot:
             self.trade_history = []
             self.portfolio_history = [{
                 'timestamp': datetime.now(),
-                'balance': 100000.0,
-                'equity': 100000.0
+                'balance': initial_balance,
+                'equity': initial_balance
             }]
     
             # Market conditions for smaller account
