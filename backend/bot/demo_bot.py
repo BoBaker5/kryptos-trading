@@ -2251,36 +2251,28 @@ async def initialize_position_tracking(self):
         try:
             conn = sqlite3.connect(self.db_name)
             c = conn.cursor()
-
+    
             # Create tables if they don't exist
             c.execute('''CREATE TABLE IF NOT EXISTS demo_balance
                         (currency TEXT PRIMARY KEY, amount REAL)''')
-
+                        
             c.execute('''CREATE TABLE IF NOT EXISTS demo_positions
-                        (symbol TEXT PRIMARY KEY, volume REAL, entry_price REAL,
+                        (symbol TEXT PRIMARY KEY, volume REAL, entry_price REAL, 
                         entry_time TEXT, high_price REAL)''')
-
+                        
             c.execute('''CREATE TABLE IF NOT EXISTS demo_trade_history
                         (timestamp TEXT, symbol TEXT, type TEXT, price REAL,
                         quantity REAL, value REAL, balance_after REAL)''')
-
+                        
             c.execute('''CREATE TABLE IF NOT EXISTS demo_portfolio_history
                         (timestamp TEXT, balance REAL, equity REAL)''')
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 54fc3c7a25db4881c34a6bc66871d46c3c81802a
             # Load balance data
             c.execute('SELECT * FROM demo_balance')
             balance_data = c.fetchall()
             if balance_data:
                 self.demo_balance = {row[0]: row[1] for row in balance_data}
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 54fc3c7a25db4881c34a6bc66871d46c3c81802a
             # Load positions
             c.execute('SELECT * FROM demo_positions')
             position_data = c.fetchall()
@@ -2293,7 +2285,7 @@ async def initialize_position_tracking(self):
                         'entry_time': datetime.fromisoformat(row[3]),
                         'high_price': row[4]
                     }
-
+    
             # Load trade history
             c.execute('SELECT * FROM demo_trade_history')
             trade_data = c.fetchall()
@@ -2309,7 +2301,7 @@ async def initialize_position_tracking(self):
                         'value': row[5],
                         'balance_after': row[6]
                     })
-
+    
             # Load portfolio history
             c.execute('SELECT * FROM demo_portfolio_history ORDER BY timestamp DESC LIMIT 100')
             portfolio_data = c.fetchall()
@@ -2321,13 +2313,20 @@ async def initialize_position_tracking(self):
                         'balance': row[1],
                         'equity': row[2]
                     })
-
+    
             conn.close()
             self.logger.info("Demo state loaded successfully")
-
+            
+            # Log current state
+            self.logger.info("\n=== Loaded Demo State ===")
+            self.logger.info(f"USD Balance: ${self.demo_balance['ZUSD']:.2f}")
+            self.logger.info(f"Active Positions: {len(self.demo_positions)}")
+            self.logger.info(f"Trade History: {len(self.trade_history)} trades")
+            self.logger.info(f"Portfolio History: {len(self.portfolio_history)} entries")
+    
         except Exception as e:
-            self.logger.error(f"Error loading demo state: {str(e)}")    
-
+            self.logger.error(f"Error loading demo state: {str(e)}")
+    
     def save_demo_state(self):
         """Save current demo state to database"""
         try:
