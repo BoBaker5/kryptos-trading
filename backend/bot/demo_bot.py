@@ -570,7 +570,7 @@ class DemoKrakenBot:
         # Initialize logging first
         self.logger = self._setup_logging()
         self.db_name = 'crypto_trading.db'
-
+    
         try:
             # Initialize Kraken API with rate limiting
             self.kraken = krakenex.API()
@@ -2484,10 +2484,7 @@ async def initialize_position_tracking(self):
 
 async def main():
     # Initialize and run the bot
-    api_key = "P6J5R5pPLXjRGiqgL/4j9ZNGN4bormuJEDTnvsT/NTk/uzQITcsLFiFa"
-    secret_key = "FqCqZqTC+HWQ2b24BCWb24hnLieqDunV+4QgGR1098SrOEgXqRd6Yq/3Ih8bU9aussbBRBbhMQeVSUroFRX+PA=="
-    
-    bot = DemoKrakenBot(api_key, secret_key)
+    bot = DemoKrakenBot()
     
     try:
         await bot.run()
