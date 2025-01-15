@@ -19,7 +19,6 @@ const BotDashboard = ({ mode = 'live' }) => {
 
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [wsConnected, setWsConnected] = useState(false);
 
   useEffect(() => {
     const fetchBotStatus = async () => {
@@ -42,39 +41,7 @@ const BotDashboard = ({ mode = 'live' }) => {
 
     fetchBotStatus();
     const interval = setInterval(fetchBotStatus, 30000);
-
-    // WebSocket setup
-    const wsUrl = API_URL.replace('http', 'ws');
-    const ws = new WebSocket(`${wsUrl}/${mode === 'demo' ? 'demo' : 'live'}`);
-    
-    ws.onopen = () => {
-      setWsConnected(true);
-      console.log('WebSocket Connected');
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'status_update') {
-        setBotData(prevData => ({
-          ...prevData,
-          ...data.data
-        }));
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      setWsConnected(false);
-    };
-
-    return () => {
-      clearInterval(interval);
-      ws.close();
-    };
+    return () => clearInterval(interval);
   }, [mode, API_URL]);
 
   const handleStartBot = async () => {
@@ -117,8 +84,8 @@ const BotDashboard = ({ mode = 'live' }) => {
         </h1>
         
         <div className="flex items-center gap-4">
-          <div className={`px-3 py-1 rounded-full ${wsConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            {wsConnected ? 'Connected' : 'Disconnected'}
+          <div className={`px-3 py-1 rounded-full ${botData.status === 'running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {botData.status === 'running' ? 'Active' : 'Stopped'}
           </div>
           
           {botData.status === 'running' ? (
@@ -152,7 +119,7 @@ const BotDashboard = ({ mode = 'live' }) => {
             <div>
               <p className="text-gray-500">Portfolio Value</p>
               <h3 className="text-2xl font-bold">
-                ${botData.metrics.current_equity.toFixed(2)}
+                ${botData.metrics?.current_equity?.toFixed(2) || '0.00'}
               </h3>
             </div>
             <DollarSign className="h-8 w-8 text-[#87CEEB]" />
@@ -164,15 +131,15 @@ const BotDashboard = ({ mode = 'live' }) => {
             <div>
               <p className="text-gray-500">P&L</p>
               <h3 className={`text-2xl font-bold ${
-                botData.metrics.pnl >= 0 ? 'text-green-500' : 'text-red-500'
+                botData.metrics?.pnl >= 0 ? 'text-green-500' : 'text-red-500'
               }`}>
-                ${botData.metrics.pnl.toFixed(2)}
+                ${botData.metrics?.pnl?.toFixed(2) || '0.00'}
               </h3>
               <p className={`text-sm ${
-                botData.metrics.pnl_percentage >= 0 ? 'text-green-500' : 'text-red-500'
+                botData.metrics?.pnl_percentage >= 0 ? 'text-green-500' : 'text-red-500'
               }`}>
-                {botData.metrics.pnl_percentage >= 0 ? '+' : ''}
-                {botData.metrics.pnl_percentage.toFixed(2)}%
+                {botData.metrics?.pnl_percentage >= 0 ? '+' : ''}
+                {botData.metrics?.pnl_percentage?.toFixed(2) || '0.00'}%
               </p>
             </div>
             <Activity className="h-8 w-8 text-[#87CEEB]" />
@@ -184,7 +151,7 @@ const BotDashboard = ({ mode = 'live' }) => {
             <div>
               <p className="text-gray-500">Active Positions</p>
               <h3 className="text-2xl font-bold text-[#001F3F]">
-                {botData.positions.length}
+                {botData.positions?.length || 0}
               </h3>
             </div>
             <LineChart className="h-8 w-8 text-[#87CEEB]" />
@@ -207,7 +174,7 @@ const BotDashboard = ({ mode = 'live' }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {botData.positions.length === 0 ? (
+              {!botData.positions?.length ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                     No active positions
@@ -256,14 +223,14 @@ const BotDashboard = ({ mode = 'live' }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {botData.trades?.length === 0 ? (
+              {!botData.trades?.length ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                     No trades yet
                   </td>
                 </tr>
               ) : (
-                botData.trades?.map((trade, index) => (
+                botData.trades.map((trade, index) => (
                   <tr key={index}>
                     <td className="px-6 py-4">
                       {new Date(trade.timestamp).toLocaleString()}
