@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Activity, DollarSign, TrendingUp, LineChart } from 'lucide-react';
+import { Activity, DollarSign, LineChart } from 'lucide-react';
 
 const BotDashboard = ({ mode = 'live' }) => {
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
