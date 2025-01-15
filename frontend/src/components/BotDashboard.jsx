@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Activity, DollarSign, LineChart } from 'lucide-react';
 
 const BotDashboard = ({ mode = 'live' }) => {
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+  const API_URL = process.env.REACT_APP_API_URL || '/api';
   
   const [botData, setBotData] = useState({
     status: 'stopped',
@@ -21,23 +21,20 @@ const BotDashboard = ({ mode = 'live' }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBotStatus = async () => {
-      try {
-        const endpoint = mode === 'demo' ? '/demo-status' : '/live-status';
-        console.log('Fetching from:', `${API_URL}${endpoint}`);
-        const response = await axios.get(`${API_URL}${endpoint}`);
-        
-        if (response.data.status === 'success') {
-          setBotData(response.data.data);
-          setError(null);
-        }
-      } catch (err) {
-        console.error('Error fetching bot status:', err);
-        setError('Unable to connect to trading server. Please check your connection.');
-      } finally {
-        setLoading(false);
+  const fetchBotStatus = async () => {
+    try {
+      const endpoint = mode === 'demo' ? '/demo-status' : '/live-status';
+      console.log('Fetching from:', `${API_URL}${endpoint}`);
+      const response = await axios.get(`${API_URL}${endpoint}`);
+      if (response.data.status === 'success') {
+        setBotData(response.data.data);
+        setError(null);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching bot status:', err);
+      setError('Unable to connect to trading server. Please check your connection.');
+    }
+  };
 
     fetchBotStatus();
     const interval = setInterval(fetchBotStatus, 30000);
