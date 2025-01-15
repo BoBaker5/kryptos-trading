@@ -18,23 +18,26 @@ const BotDashboard = ({ mode = 'live' }) => {
   });
 
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-  const fetchBotStatus = async () => {
-    try {
-      const endpoint = mode === 'demo' ? '/demo-status' : '/live-status';
-      console.log('Fetching from:', `${API_URL}${endpoint}`);
-      const response = await axios.get(`${API_URL}${endpoint}`);
-      if (response.data.status === 'success') {
-        setBotData(response.data.data);
-        setError(null);
+    const fetchBotStatus = async () => {
+      try {
+        const endpoint = mode === 'demo' ? '/demo-status' : '/live-status';
+        console.log('Fetching from:', `${API_URL}${endpoint}`);
+        const response = await axios.get(`${API_URL}${endpoint}`);
+        
+        if (response.data.status === 'success') {
+          setBotData(response.data.data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error fetching bot status:', err);
+        setError('Unable to connect to trading server. Please check your connection.');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error('Error fetching bot status:', err);
-      setError('Unable to connect to trading server. Please check your connection.');
-    }
-  };
+    };
 
     fetchBotStatus();
     const interval = setInterval(fetchBotStatus, 30000);
@@ -65,7 +68,7 @@ const BotDashboard = ({ mode = 'live' }) => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#87CEEB]"></div>
