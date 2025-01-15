@@ -572,6 +572,10 @@ class DemoKrakenBot:
         self.db_name = 'crypto_trading.db'
     
         try:
+            # Initialize database
+            self.init_db()
+            # Add position tracker
+            self.position_tracker = PositionTracker()
             # Initialize Kraken API with rate limiting
             self.kraken = krakenex.API()
             self.k = KrakenAPI(self.kraken, retry=0.5)
@@ -2246,6 +2250,40 @@ class DemoKrakenBot:
             self.logger.error(f"Error monitoring positions: {str(e)}")
             self.position_tracker.positions = {}  # Reset on error
 
+    def init_db(self):
+        """Initialize database tables"""
+        try:
+            conn = sqlite3.connect(self.db_name)
+            c = conn.cursor()
+    
+            # Create all required tables
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_balance
+                        (currency TEXT PRIMARY KEY, amount REAL)''')
+                        
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_positions
+                        (symbol TEXT PRIMARY KEY, volume REAL, entry_price REAL, 
+                        entry_time TEXT, high_price REAL)''')
+                        
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_trade_history
+                        (timestamp TEXT, symbol TEXT, type TEXT, price REAL,
+                        quantity REAL, value REAL, balance_after REAL)''')
+                        
+            c.execute('''CREATE TABLE IF NOT EXISTS demo_portfolio_history
+                        (timestamp TEXT, balance REAL, equity REAL)''')
+    
+            # Initialize demo balance if table is empty
+            c.execute('SELECT COUNT(*) FROM demo_balance')
+            if c.fetchone()[0] == 0:
+                c.execute('INSERT INTO demo_balance VALUES (?, ?)',
+                         ('ZUSD', self.demo_balance['ZUSD']))
+    
+            conn.commit()
+            conn.close()
+            self.logger.info("Database initialized successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing database: {str(e)}")
+    
     def load_demo_state(self) -> None:
         """Load demo bot state from database"""
         try:
