@@ -79,6 +79,60 @@ async def shutdown_event():
         logger.error(f"Error stopping bots: {str(e)}")
 
 # API Endpoints
+@app.get("/api/bot-status/{user_id}")
+async def get_bot_status(user_id: int):
+    """Get status for both demo and live bots"""
+    try:
+        demo_status = bot_manager.get_demo_bot_status()
+        live_status = bot_manager.get_live_bot_status()
+        return APIResponse(
+            status="success",
+            message="Bot status retrieved successfully",
+            data={
+                "demo": demo_status,
+                "live": live_status,
+                "running": bot_manager.running
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error getting bot status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@app.post("/api/start-bot/{user_id}")
+async def start_bot(user_id: int):
+    """Start both demo and live bots"""
+    try:
+        await bot_manager.start_bots()
+        return APIResponse(
+            status="success",
+            message="Bots started successfully"
+        )
+    except Exception as e:
+        logger.error(f"Error starting bots: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@app.post("/api/stop-bot/{user_id}")
+async def stop_bot(user_id: int):
+    """Stop both demo and live bots"""
+    try:
+        await bot_manager.stop_bots()
+        return APIResponse(
+            status="success",
+            message="Bots stopped successfully"
+        )
+    except Exception as e:
+        logger.error(f"Error stopping bots: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 @app.get("/api/demo-status")
 async def get_demo_status():
     """Get demo bot status"""
@@ -172,7 +226,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         await manager.connect(websocket, client_id)
         try:
             while True:
-                # Keep connection alive and handle incoming messages
                 data = await websocket.receive_text()
                 try:
                     message = json.loads(data)
