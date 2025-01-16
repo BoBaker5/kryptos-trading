@@ -21,32 +21,28 @@ const BotDashboard = ({ mode = 'live' }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBotStatus = async () => {
-      try {
-        const endpoint = mode === 'demo' ? '/demo-status' : '/live-status';
-        console.log('Fetching from:', `${API_URL}${endpoint}`);
-        const response = await axios.get(`${API_URL}${endpoint}`);
-        
-        if (response.data.status === 'success') {
-          setBotData(response.data.data);
-          setError(null);
-        }
-      } catch (err) {
-        console.error('Error fetching bot status:', err);
-        setError('Unable to connect to trading server. Please check your connection.');
-      } finally {
-        setIsLoading(false);
+  // In BotDashboard.jsx
+  const fetchBotStatus = async () => {
+    try {
+      const endpoint = `/api/bot-status/${mode}`; // Changed this line
+      console.log('Fetching from:', `${API_URL}${endpoint}`);
+      const response = await axios.get(`${API_URL}${endpoint}`);
+      
+      if (response.data.status === 'success') {
+        setBotData(response.data.data);
+        setError(null);
       }
-    };
-
-    fetchBotStatus();
-    const interval = setInterval(fetchBotStatus, 30000);
-    return () => clearInterval(interval);
-  }, [mode, API_URL]);
-
+    } catch (err) {
+      console.error('Error fetching bot status:', err);
+      setError('Unable to connect to trading server. Please check your connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const handleStartBot = async () => {
     try {
-      const endpoint = mode === 'demo' ? '/start-demo-bot' : '/start-live-bot';
+      const endpoint = `/api/start-bot/${mode}`; // Changed this line
       const response = await axios.post(`${API_URL}${endpoint}`);
       if (response.data.status === 'success') {
         setBotData(prev => ({ ...prev, status: 'running' }));
@@ -55,10 +51,10 @@ const BotDashboard = ({ mode = 'live' }) => {
       setError('Failed to start bot. Please try again.');
     }
   };
-
+  
   const handleStopBot = async () => {
     try {
-      const endpoint = mode === 'demo' ? '/stop-demo-bot' : '/stop-live-bot';
+      const endpoint = `/api/stop-bot/${mode}`; // Changed this line
       const response = await axios.post(`${API_URL}${endpoint}`);
       if (response.data.status === 'success') {
         setBotData(prev => ({ ...prev, status: 'stopped' }));
