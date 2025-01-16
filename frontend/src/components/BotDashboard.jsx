@@ -20,11 +20,9 @@ const BotDashboard = ({ mode = 'live' }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-  // In BotDashboard.jsx
   const fetchBotStatus = async () => {
     try {
-      const endpoint = `/api/bot-status/${mode}`; // Changed this line
+      const endpoint = `/api/bot-status/${mode}`;
       console.log('Fetching from:', `${API_URL}${endpoint}`);
       const response = await axios.get(`${API_URL}${endpoint}`);
       
@@ -39,10 +37,10 @@ const BotDashboard = ({ mode = 'live' }) => {
       setIsLoading(false);
     }
   };
-  
+
   const handleStartBot = async () => {
     try {
-      const endpoint = `/api/start-bot/${mode}`; // Changed this line
+      const endpoint = `/api/start-bot/${mode}`;
       const response = await axios.post(`${API_URL}${endpoint}`);
       if (response.data.status === 'success') {
         setBotData(prev => ({ ...prev, status: 'running' }));
@@ -51,10 +49,10 @@ const BotDashboard = ({ mode = 'live' }) => {
       setError('Failed to start bot. Please try again.');
     }
   };
-  
+
   const handleStopBot = async () => {
     try {
-      const endpoint = `/api/stop-bot/${mode}`; // Changed this line
+      const endpoint = `/api/stop-bot/${mode}`;
       const response = await axios.post(`${API_URL}${endpoint}`);
       if (response.data.status === 'success') {
         setBotData(prev => ({ ...prev, status: 'stopped' }));
@@ -63,6 +61,12 @@ const BotDashboard = ({ mode = 'live' }) => {
       setError('Failed to stop bot. Please try again.');
     }
   };
+
+  useEffect(() => {
+    fetchBotStatus();
+    const interval = setInterval(fetchBotStatus, 30000);
+    return () => clearInterval(interval);
+  }, [mode]);
 
   if (isLoading) {
     return (
