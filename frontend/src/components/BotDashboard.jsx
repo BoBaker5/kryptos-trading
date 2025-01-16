@@ -63,18 +63,28 @@ const BotDashboard = ({ mode = 'live' }) => {
   };
 
   useEffect(() => {
-    fetchBotStatus();
-    const interval = setInterval(fetchBotStatus, 30000);
+    const fetchData = async () => {
+      try {
+        const endpoint = `/api/bot-status/${mode}`;
+        console.log('Fetching from:', `${API_URL}${endpoint}`);
+        const response = await axios.get(`${API_URL}${endpoint}`);
+        
+        if (response.data.status === 'success') {
+          setBotData(response.data.data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error fetching bot status:', err);
+        setError('Unable to connect to trading server. Please check your connection.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [mode]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#87CEEB]"></div>
-      </div>
-    );
-  }
+  }, [mode, API_URL]);
 
   return (
     <div className="p-6">
